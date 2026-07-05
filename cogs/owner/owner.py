@@ -40,7 +40,8 @@ from discord.ext.commands import (
     cooldown,
     BucketType,
     Author,
-    hybrid_command,
+    command,
+    hybrid_group,
     group,
     Cog,
     has_permissions,
@@ -201,10 +202,8 @@ class Owner(CogMeta):
 
         await self.bot.pool.execute(
             """
-            INSERT INTO blacklist (user_id)
-            VALUES ($1)
-            ON CONFLICT (user_id)
-            DO NOTHING
+            INSERT OR IGNORE INTO blacklist (user_id)
+            VALUES (?)
             """,
             user.id,
         )
@@ -215,7 +214,7 @@ class Owner(CogMeta):
     @is_owner()
     async def restart(self, ctx: Context):
         await ctx.message.add_reaction("✅")
-        os.system("pm2 restart bleed")
+        os.system("pm2 restart Xrypton")
 
     @command(name="push", description="Push to the github repo")
     @is_owner()

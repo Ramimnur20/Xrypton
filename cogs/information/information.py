@@ -42,7 +42,8 @@ from discord.ext.commands import (
     cooldown,
     BucketType,
     Author,
-    hybrid_command,
+    command,
+    hybrid_group,
     group,
     Cog,
 )
@@ -125,8 +126,10 @@ class Information(CogMeta):
         description="Get information about a user.",
     )
     async def userinfo(
-        self, ctx: Context, *, user: Union[User, Member, str] = Author
+        self, ctx: Context, *, user: Union[User, Member, str] = None
     ) -> Message:
+        if user is None:
+            user = ctx.author
         if isinstance(user, (User, Member)):
             member = ctx.guild.get_member(user.id) if ctx.guild else None
         else:
@@ -253,8 +256,10 @@ class Information(CogMeta):
 
     @command(name="avatar", aliases=["av"], description="Get a user's avatar.")
     async def avatar(
-        self, ctx: Context, *, user: Union[User, Member, str] = Author
+        self, ctx: Context, *, user: Union[User, Member, str] = None
     ) -> Message:
+        if user is None:
+            user = ctx.author
         if isinstance(user, (User, Member)):
             member = ctx.guild.get_member(user.id) if ctx.guild else None
         else:
@@ -289,8 +294,10 @@ class Information(CogMeta):
 
     @command(name="banner", description="Get a user's banner.")
     async def banner(
-        self, ctx: Context, *, user: Union[User, Member, str] = Author
+        self, ctx: Context, *, user: Union[User, Member, str] = None
     ) -> Message:  # type: ignore
+        if user is None:
+            user = ctx.author
         if isinstance(user, (User, Member)):
             member = ctx.guild.get_member(user.id) if ctx.guild else None
         else:
@@ -393,7 +400,7 @@ class Information(CogMeta):
         description="Get the latency of the bot",
     )
     async def ping(self, ctx: Context):
-        pings = "/root/bleed/base/data/pings.txt"  # replace with your file path
+        pings = "./base/data/pings.txt"  # replace with your file path
         with open(pings, "r") as f:
             lines = f.readlines()
             randomping = choice(lines).strip()
@@ -406,7 +413,7 @@ class Information(CogMeta):
             content=f"it took `{latency_ms}ms` to ping **{randomping}** (edit: `{edit_ms}ms`)"
         )
 
-    @group(
+    @hybrid_group(
         name="boosters",
         invoke_without_command=True,
         description="See a list of boosters in the guild",
@@ -574,8 +581,10 @@ class Information(CogMeta):
         description="Get a user's server avatar",
     )
     async def serveravatar(
-        self, ctx: Context, *, user: Union[User, Member, str] = Author
+        self, ctx: Context, *, user: Union[User, Member, str] = None
     ) -> Message:
+        if user is None:
+            user = ctx.author
         if isinstance(user, (User, Member)):
             member = ctx.guild.get_member(user.id) if ctx.guild else None
         else:
@@ -617,8 +626,10 @@ class Information(CogMeta):
         description="Get a user's server banner.",
     )
     async def serverbanner(
-        self, ctx: Context, *, user: Union[User, Member, str] = Author
+        self, ctx: Context, *, user: Union[User, Member, str] = None
     ) -> Message:
+        if user is None:
+            user = ctx.author
         if isinstance(user, (User, Member)):
             member = ctx.guild.get_member(user.id) if ctx.guild else None
         else:
@@ -807,15 +818,15 @@ class Information(CogMeta):
     @command(name="status", description="Get a link to the status page")
     async def status(self, ctx: Context):
         return await ctx.send(
-            f"{ctx.author.mention}: Experiencing issues? Check your shards status on https://bleed.best/status"
+            f"{ctx.author.mention}: Experiencing issues? Check your shards status on https://Xrypton.best/status"
         )
 
-    @group(
+    @hybrid_group(
         name="emoji",
         description="Returns a large emoji or server emote",
         invoke_without_command=True,
     )
-    async def emoji(self, ctx: Context, *, emoji: Union[PartialEmoji, Emoji]):
+    async def emoji(self, ctx: Context, *, emoji: PartialEmoji):
         return await ctx.send(
             file=await emoji.to_file(
                 filename=f"{emoji.name}{'.gif' if emoji.animated else '.png'}"
@@ -829,7 +840,7 @@ class Information(CogMeta):
     )
     @has_permissions(manage_expressions=True)
     async def emoji_steal(
-        self, ctx: Context, emoji: Union[Emoji, PartialEmoji], *, name: str = None
+        self, ctx: Context, emoji: PartialEmoji, *, name: str = None
     ):
         if not name:
             name = emoji.name
@@ -848,7 +859,7 @@ class Information(CogMeta):
         description="Remove an emoji from the server.",
     )
     @has_permissions(manage_expressions=True)
-    async def emoji_remove(self, ctx: Context, *, emoji: Union[Emoji, PartialEmoji]):
+    async def emoji_remove(self, ctx: Context, *, emoji: PartialEmoji):
         try:
             await emoji.delete()
             return await ctx.approve(f"Removed **emote** `{emoji.name}`")

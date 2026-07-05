@@ -12,7 +12,14 @@ from playwright.async_api import (
     Playwright,
     async_playwright,
 )
-from nudenet import NudeDetector  # Correct import
+
+# Try to import nudenet for NSFW detection, but make it optional
+try:
+    from nudenet import NudeDetector
+    HAS_NUDENET = True
+except ImportError:
+    HAS_NUDENET = False
+    NudeDetector = None
 
 
 class BrowserHandler:
@@ -21,7 +28,7 @@ class BrowserHandler:
     playwright: Optional[Playwright] = None
     browser: Optional[Browser] = None
     context: Optional[BrowserContext] = None
-    detector: Optional[NudeDetector] = None  # Add detector attribute
+    detector: Optional[object] = None  # Add detector attribute
 
     def __new__(cls) -> "BrowserHandler":
         if cls._instance is None:
@@ -31,7 +38,10 @@ class BrowserHandler:
     def __init__(self) -> None:
         if not hasattr(self, "initialized"):
             self.initialized = True
-            self.detector = NudeDetector()  # Initialize the Detector
+            if HAS_NUDENET:
+                self.detector = NudeDetector()  # Initialize the Detector
+            else:
+                self.detector = None
 
     async def cleanup(self) -> None:
         if self.context:
@@ -51,32 +61,41 @@ class BrowserHandler:
 
         await self.cleanup()
 
-        self.playwright = await async_playwright().start()
+        try:
+            self.playwright = await async_playwright().start()
 
-        proxy = {
-            "server": "http://161.123.152.115:6360",
-            "username": "zhjujpxh",
-            "password": "hue08a6d8hs6",
-        }
+            proxy = {
+                "server": "http://161.123.152.115:6360",
+                "username": "zhjujpxh",
+                "password": "hue08a6d8hs6",
+            }
 
-        self.browser = await self.playwright.chromium.launch()
-        self.context = await self.browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36",
-            viewport={"width": 1920, "height": 1080},
-            color_scheme="dark",
-            locale="en-US",
-            proxy=proxy,
-        )
+            self.browser = await self.playwright.chromium.launch()
+            self.context = await self.browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36",
+                viewport={"width": 1920, "height": 1080},
+                color_scheme="dark",
+                locale="en-US",
+                proxy=proxy,
+            )
 
-        # Initialize limiter here if not already initialized
-        if self.limiter is None:
-            self.limiter = CapacityLimiter(4)
+            # Initialize limiter here if not already initialized
+            if self.limiter is None:
+                self.limiter = CapacityLimiter(4)
+            
+            log.info("Playwright browser initialized successfully")
+        except Exception as e:
+            log.warning(f"Failed to initialize Playwright browser: {e}")
+            log.warning("Browser-dependent commands will not be available. Run 'playwright install' to enable them.")
+            self.playwright = None
+            self.browser = None
+            self.context = None
 
     @asynccontextmanager
     async def borrow_page(self) -> AsyncGenerator[Page, None]:
         if not self.context:
-            raise RuntimeError("Browser context is not initialized.")
+            raise RuntimeError("Browser context is not initialized. Run 'playwright install' to enable screenshot functionality.")
 
         # Ensure limiter is initialized
         if self.limiter is None:
@@ -92,28 +111,29 @@ class BrowserHandler:
             screenshot_path = f"./screenshots/{identifier}.png"
             await page.screenshot(path=screenshot_path)
 
-            # Use NudeNet Detector to check for NSFW content
-            bad_filters = [
-                "BUTTOCKS_EXPOSED",
-                "FEMALE_BREAST_EXPOSED",
-                "ANUS_EXPOSED",
-                "FEMALE_GENITALIA_EXPOSED",
-                "MALE_GENITALIA_EXPOSED",
-            ]
-            detection_results = await to_thread(self.detector.detect, screenshot_path)
-            log.info(
-                f"NSFW detection results for page ID {identifier}: {detection_results}"
-            )
+            # Use NudeNet Detector to check for NSFW content (if available)
+            if HAS_NUDENET and self.detector:
+                bad_filters = [
+                    "BUTTOCKS_EXPOSED",
+                    "FEMALE_BREAST_EXPOSED",
+                    "ANUS_EXPOSED",
+                    "FEMALE_GENITALIA_EXPOSED",
+                    "MALE_GENITALIA_EXPOSED",
+                ]
+                detection_results = await to_thread(self.detector.detect, screenshot_path)
+                log.info(
+                    f"NSFW detection results for page ID {identifier}: {detection_results}"
+                )
 
-            # Check for explicit content
-            if any(
-                [prediction["class"] in bad_filters for prediction in detection_results]
-            ):
-                remove(screenshot_path)
-                await page.close()
-                self.limiter.release()
-                log.warning(f"Page ID {identifier} contains explicit content.")
-                raise Exception("Page contains explicit content")
+                # Check for explicit content
+                if any(
+                    [prediction["class"] in bad_filters for prediction in detection_results]
+                ):
+                    remove(screenshot_path)
+                    await page.close()
+                    self.limiter.release()
+                    log.warning(f"Page ID {identifier} contains explicit content.")
+                    raise Exception("Page contains explicit content")
         finally:
             self.limiter.release()
             await page.close()

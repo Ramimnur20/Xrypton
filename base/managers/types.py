@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 from discord.ext.commands import Cog
 
 if TYPE_CHECKING:
-    from base.bleed import Bot
+    from base.Xrypton import Bot
 
 
 class CogMeta(Cog):

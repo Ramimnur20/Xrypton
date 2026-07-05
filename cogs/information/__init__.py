@@ -1,4 +1,4 @@
-from base.bleed import Bot
+from base.Xrypton import Bot
 
 
 async def setup(bot: Bot) -> None:

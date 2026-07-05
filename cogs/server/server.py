@@ -1,9 +1,4 @@
 from typing import Union
-import requests
-import io
-import time
-import aiohttp
-import re
 from re import compile
 import asyncio
 
@@ -21,22 +16,11 @@ import time
 
 from discord import (
     Embed,
-    User,
     Member,
     Message,
-    Spotify,
-    ActivityType,
     Permissions,
-    Status,
-    Invite,
     Role,
-    Button,
-    ButtonStyle,
     TextChannel,
-    ui,
-    Interaction,
-    NotFound,
-    HTTPException,
 )
 from discord.app_commands import (
     allowed_installs,
@@ -47,7 +31,8 @@ from discord.ext.commands import (
     cooldown,
     BucketType,
     Author,
-    hybrid_command,
+    command,
+    hybrid_group,
     group,
     Cog,
 )
@@ -155,7 +140,7 @@ class Server(CogMeta):
                         ]
                     )
 
-    @group(
+    @hybrid_group(
         name="welcome",
         aliases=["welc", "welcomer", "wlc"],
         invoke_without_command=True,
@@ -336,7 +321,43 @@ class Server(CogMeta):
             else:
                 await ctx.send(embed=embeds[0])
 
-    @group(
+    @welcome.command(
+        name="variables", description="Show available variables for welcome messages."
+    )
+    @has_permissions(manage_messages=True)
+    async def welcome_variables(self, ctx: Context):
+        embed = discord.Embed(
+            color=COLORS.neutral,
+            title="Welcome Variables",
+            description="",
+        )
+        embed.add_field(
+            name="User",
+            value=(
+                "`{user}`, `{user.name}`, `{user.mention}`, `{user.avatar}`, "
+                "`{user.discriminator}`, `{user.joined_at}`, `{user.created_at}`"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="Guild",
+            value=(
+                "`{guild.name}`, `{guild.count}`, `{guild.count.format}`, "
+                "`{guild.id}`, `{guild.created_at}`, `{guild.boost_count}`, "
+                "`{guild.boost_count.format}`, `{guild.booster_count}`, "
+                "`{guild.booster_count.format}`, `{guild.boost_tier}`, "
+                "`{guild.vanity}`, `{guild.icon}`"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="Special",
+            value="`{invisible}`, `{botcolor}`",
+            inline=False,
+        )
+        await ctx.send(embed=embed)
+
+    @hybrid_group(
         name="prefix",
         invoke_without_command=True,
         description="See the prefix in the server",
@@ -356,7 +377,7 @@ class Server(CogMeta):
     @has_permissions(manage_messages=True)
     async def prefix_add(self, ctx: Context, *, prefix: str):
         await self.bot.pool.execute(
-            "INSERT INTO prefix VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET prefix = $2",
+            "INSERT OR REPLACE INTO prefix VALUES (?, ?)",
             ctx.guild.id,
             str(prefix),
         )
@@ -372,7 +393,7 @@ class Server(CogMeta):
         )
         return await ctx.approve(f"**Server prefix** updated to: `,`")
 
-    @group(name="alias", invoke_without_command=True, description="Configure aliases")
+    @hybrid_group(name="alias", invoke_without_command=True, description="Configure aliases")
     @has_permissions(manage_guild=True)
     async def alias(self, ctx: Context):
         return await ctx.send_help(ctx.command)
@@ -494,7 +515,7 @@ class Server(CogMeta):
         elif embeds:
             await ctx.send(embed=embeds[0])
 
-    @group(
+    @hybrid_group(
         name="autorole",
         invoke_without_command=True,
         description="Configure autorole",
@@ -651,7 +672,7 @@ class Server(CogMeta):
                     await channel.send(content=processed_message)  # type: ignore
                 await asyncio.sleep(0.4)
 
-    @group(
+    @hybrid_group(
         name="stickymessage",
         aliases=["sticky"],
         description="Set up a sticky message in one or multiple channels",
@@ -686,15 +707,13 @@ class Server(CogMeta):
 
         await self.bot.pool.execute(
             """
-            INSERT INTO sticky_messages (guild_id, channel_id, message, message_id)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (guild_id, channel_id, message_id)
-            DO UPDATE SET message = $3
+            INSERT OR REPLACE INTO sticky_messages (guild_id, channel_id, message_id, message)
+            VALUES (?, ?, ?, ?)
             """,
             ctx.guild.id,
             channel.id,
-            str(message),
             _message.id,
+            str(message),
         )
 
     @stickymessage.command(
@@ -759,7 +778,7 @@ class Server(CogMeta):
                 new_message.id,
             )
 
-    @group(
+    @hybrid_group(
         name="boosts",
         aliases=["boost"],
         description="Set up boost messages in one or multiple channels",
@@ -962,7 +981,7 @@ class Server(CogMeta):
                         await channel.send(content=processed_message)  # type: ignore
                     await asyncio.sleep(0.4)
 
-    @group(name = "autoresponder", aliases = ["autorespond", "autoresponse", "ar"], description = "Set up automatic replies to messages matching a trigger", invoke_without_command = True)
+    @hybrid_group(name = "autoresponder", aliases = ["autorespond", "autoresponse", "ar"], description = "Set up automatic replies to messages matching a trigger", invoke_without_command = True)
     @has_permissions(manage_messages = True)
     async def autoresponder(self, ctx: Context):
         return await ctx.send_help(ctx.command)
@@ -1151,7 +1170,7 @@ class Server(CogMeta):
             else:
                 await ctx.send(embed=embeds[0])
 
-    @group(
+    @hybrid_group(
         name="boosterrole",
         aliases=["br"],
         description="Configure boosterroles in your guild.",
@@ -1324,7 +1343,7 @@ class Server(CogMeta):
     @has_br_role()
     @level2()
     async def boosterrole_icon(
-        self, ctx: Context, *, icon: Union[discord.PartialEmoji, str]
+        self, ctx: Context, *, icon: discord.PartialEmoji
     ):
         role = ctx.guild.get_role(
             await self.bot.pool.fetchval(
@@ -1371,7 +1390,7 @@ class Server(CogMeta):
         )
         return await ctx.approve(f"Your booster role has been deleted.")
     
-    @group(
+    @hybrid_group(
         name="leaves",
         aliases=["bye", "leave", "leaver", "goodbye"],
         description="Configure the leave messages.",
@@ -1390,10 +1409,8 @@ class Server(CogMeta):
 
         await self.bot.pool.execute(
             """
-            INSERT INTO leave (guild_id, channel_id, message)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (guild_id, channel_id) 
-            DO UPDATE SET message = EXCLUDED.message
+            INSERT OR REPLACE INTO leave (guild_id, channel_id, message)
+            VALUES (?, ?, ?)
             """,
             ctx.guild.id,
             channel.id,
@@ -1464,6 +1481,42 @@ class Server(CogMeta):
 
         await ctx.send(embed=embed)
 
+    @leaves.command(
+        name="variables", description="Show available variables for leave messages."
+    )
+    @has_permissions(manage_messages=True)
+    async def leaves_variables(self, ctx: Context):
+        embed = discord.Embed(
+            color=COLORS.neutral,
+            title="Leave Variables",
+            description="",
+        )
+        embed.add_field(
+            name="User",
+            value=(
+                "`{user}`, `{user.name}`, `{user.mention}`, `{user.avatar}`, "
+                "`{user.discriminator}`, `{user.joined_at}`, `{user.created_at}`"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="Guild",
+            value=(
+                "`{guild.name}`, `{guild.count}`, `{guild.count.format}`, "
+                "`{guild.id}`, `{guild.created_at}`, `{guild.boost_count}`, "
+                "`{guild.boost_count.format}`, `{guild.booster_count}`, "
+                "`{guild.booster_count.format}`, `{guild.boost_tier}`, "
+                "`{guild.vanity}`, `{guild.icon}`"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="Special",
+            value="`{invisible}`, `{botcolor}`",
+            inline=False,
+        )
+        await ctx.send(embed=embed)
+
     @Cog.listener("on_member_remove")
     async def dispatch_leaves(self, member: Member):
         """Dispatches the leave messages."""
@@ -1477,7 +1530,7 @@ class Server(CogMeta):
                 await send_embed(channel, result["message"], member)
                 await asyncio.sleep(0.5)
 
-    @group(name="fakeperms", aliases=["fp"], invoke_without_command=True)
+    @hybrid_group(name="fakeperms", aliases=["fp"], invoke_without_command=True)
     @has_permissions(administrator=True)
     async def fakeperms(self, ctx: Context):
         """Manage fakeperms in your server."""
@@ -1509,10 +1562,8 @@ class Server(CogMeta):
 
         await self.bot.pool.execute(
             """
-            INSERT INTO fake_permissions (guild_id, role_id, permission)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (guild_id, role_id)
-            DO UPDATE SET permission = EXCLUDED.permission
+            INSERT OR REPLACE INTO fake_permissions (guild_id, role_id, permission)
+            VALUES (?, ?, ?)
             """,
             ctx.guild.id,
             role.id,
@@ -1584,10 +1635,8 @@ class Server(CogMeta):
 
         await self.bot.pool.execute(
             """
-            INSERT INTO fake_permissions (guild_id, role_id, permission)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (guild_id, role_id)
-            DO UPDATE SET permission = EXCLUDED.permission
+            INSERT OR REPLACE INTO fake_permissions (guild_id, role_id, permission)
+            VALUES (?, ?, ?)
             """,
             ctx.guild.id,
             role.id,

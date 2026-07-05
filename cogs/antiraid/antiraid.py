@@ -36,7 +36,8 @@ from discord.ext.commands import (
     cooldown,
     BucketType,
     Author,
-    hybrid_command,
+    command,
+    hybrid_group,
     group,
     Cog,
 )
@@ -171,7 +172,7 @@ class Antiraid(CogMeta):
                             except:
                                 continue
 
-    @group(
+    @hybrid_group(
         name="antiraid", invoke_without_command=True, description="Configure antiraid."
     )
     @has_permissions(manage_guild=True)

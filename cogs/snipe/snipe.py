@@ -4,8 +4,6 @@ import requests
 import io
 import time
 import aiohttp
-import shazamio
-from shazamio import Shazam, Serialize
 from re import match
 
 from base.managers.types import CogMeta
@@ -46,7 +44,8 @@ from discord.ext.commands import (
     cooldown,
     BucketType,
     Author,
-    hybrid_command,
+    command,
+    hybrid_group,
     group,
     Cog,
     has_permissions,
@@ -55,7 +54,6 @@ from discord.ui import View
 import discord
 from discord.utils import format_dt, oauth_url
 from datetime import datetime, timedelta
-from nudenet import NudeDetector
 import asyncio
 from psutil import Process
 from difflib import get_close_matches

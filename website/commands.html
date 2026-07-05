@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commands - Xrypton</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .commands-page {
+            position: relative;
+            z-index: 2;
+            padding: 7rem 2rem 4rem;
+        }
+        .commands-hero {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+        .commands-badge {
+            display: inline-block;
+            padding: 0.5rem 1.25rem;
+            border-radius: 999px;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 1.25rem;
+            background: rgba(6, 182, 212, 0.06);
+        }
+        .commands-count {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #ffffff, #e2e8f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .commands-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+        .commands-section {
+            max-width: 1100px;
+            margin: 0 auto 3rem;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .commands-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .commands-category {
+            font-size: 1.35rem;
+            font-weight: 800;
+            margin-bottom: 1.25rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 0.75rem;
+        }
+        .command-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            background: rgba(10, 14, 26, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(6px);
+        }
+        .command-item:hover {
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 20px rgba(59, 130, 246, 0.08);
+            transform: translateY(-2px);
+        }
+        .command-name {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            white-space: nowrap;
+            min-width: 140px;
+            padding-top: 0.1rem;
+        }
+        .command-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        @media (max-width: 768px) {
+            .commands-page {
+                padding: 6rem 1.25rem 3rem;
+            }
+            .commands-grid {
+                grid-template-columns: 1fr;
+            }
+            .command-item {
+                flex-direction: column;
+                gap: 0.35rem;
+            }
+            .command-name {
+                min-width: unset;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-glow"></div>
+    <div class="background-glow glow-2"></div>
+    <div class="noise-overlay"></div>
+
+    <nav class="navbar">
+        <div class="nav-logo">Xrypton</div>
+        <div class="nav-links">
+            <a href="commands.html">Commands</a>
+            <a href="index.html#features">Features</a>
+            <a href="index.html#cta">Get Started</a>
+        </div>
+    </nav>
+
+    <div class="commands-page">
+        <div class="commands-hero">
+            <div class="commands-badge">Full Command List</div>
+            <div class="commands-count">201 Commands</div>
+            <p class="commands-subtitle">Explore everything Xrypton can do for your server.</p>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Anti-Nuke</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">antinuke</div><div class="command-desc">Configure Anti-Nuke protection</div></div>
+                <div class="command-item"><div class="command-name">antinuke settings</div><div class="command-desc">View Anti-Nuke module settings</div></div>
+                <div class="command-item"><div class="command-name">antinuke whitelist</div><div class="command-desc">Whitelist a user from Anti-Nuke</div></div>
+                <div class="command-item"><div class="command-name">antinuke admin</div><div class="command-desc">Add or remove an Anti-Nuke admin</div></div>
+                <div class="command-item"><div class="command-name">antinuke whitelisted</div><div class="command-desc">List whitelisted users</div></div>
+                <div class="command-item"><div class="command-name">antinuke admins</div><div class="command-desc">List Anti-Nuke admins</div></div>
+                <div class="command-item"><div class="command-name">antinuke enable</div><div class="command-desc">Enable Anti-Nuke in the server</div></div>
+                <div class="command-item"><div class="command-name">antinuke disable</div><div class="command-desc">Disable Anti-Nuke in the server</div></div>
+                <div class="command-item"><div class="command-name">antinuke toggle</div><div class="command-desc">Toggle an Anti-Nuke module</div></div>
+                <div class="command-item"><div class="command-name">antinuke threshold</div><div class="command-desc">Set the threshold for an Anti-Nuke module</div></div>
+                <div class="command-item"><div class="command-name">antinuke action</div><div class="command-desc">Set the punishment action for an Anti-Nuke module</div></div>
+            </div>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Anti-Raid</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">antiraid</div><div class="command-desc">Configure antiraid</div></div>
+                <div class="command-item"><div class="command-name">antiraid settings</div><div class="command-desc">Check the antiraid configuration</div></div>
+                <div class="command-item"><div class="command-name">antiraid whitelist</div><div class="command-desc">Whitelist a user for the antiraid</div></div>
+                <div class="command-item"><div class="command-name">antiraid unwhitelist</div><div class="command-desc">Unwhitelist a user on the antiraid</div></div>
+                <div class="command-item"><div class="command-name">antiraid massjoin</div><div class="command-desc">Configure antiraid massjoin</div></div>
+                <div class="command-item"><div class="command-name">massjoin enable</div><div class="command-desc">Enable massjoin event</div></div>
+                <div class="command-item"><div class="command-name">massjoin disable</div><div class="command-desc">Disable massjoin event</div></div>
+                <div class="command-item"><div class="command-name">antiraid newaccounts</div><div class="command-desc">Configure antiraid new accounts</div></div>
+                <div class="command-item"><div class="command-name">newaccounts on</div><div class="command-desc">Enable antiraid new accounts</div></div>
+                <div class="command-item"><div class="command-name">newaccounts disable</div><div class="command-desc">Disable antiraid new accounts</div></div>
+                <div class="command-item"><div class="command-name">newaccounts whitelist</div><div class="command-desc">Allow under-aged users to join</div></div>
+                <div class="command-item"><div class="command-name">antiraid defaultavatar</div><div class="command-desc">Configure antiraid default avatar</div></div>
+                <div class="command-item"><div class="command-name">defaultavatar enable</div><div class="command-desc">Enable antiraid default avatar</div></div>
+                <div class="command-item"><div class="command-name">defaultavatar disable</div><div class="command-desc">Disable antiraid default avatar</div></div>
+                <div class="command-item"><div class="command-name">antiraid whitelist view</div><div class="command-desc">View the whitelisted users</div></div>
+            </div>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Customize</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">wallet color</div><div class="command-desc">Customize your wallet gradient colors</div></div>
+                <div class="command-item"><div class="command-name">wallet embedtoggle</div><div class="command-desc">Toggle wallet between image and embed</div></div>
+                <div class="command-item"><div class="command-name">color</div><div class="command-desc">Customize your embed color</div></div>
+                <div class="command-item"><div class="command-name">v2design</div><div class="command-desc">Toggle alternative designs</div></div>
+                <div class="command-item"><div class="command-name">settings</div><div class="command-desc">Manage your settings</div></div>
+            </div>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Fun</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">say</div><div class="command-desc">Make the bot say something</div></div>
+                <div class="command-item"><div class="command-name">coinflip</div><div class="command-desc">Flip a coin</div></div>
+                <div class="command-item"><div class="command-name">8ball</div><div class="command-desc">Consult the 8-ball for an answer</div></div>
+                <div class="command-item"><div class="command-name">hotcalc</div><div class="command-desc">Check how hot someone is</div></div>
+                <div class="command-item"><div class="command-name">howgay</div><div class="command-desc">Check how gay someone is</div></div>
+                <div class="command-item"><div class="command-name">ppsize</div><div class="command-desc">Check someone's pp size</div></div>
+                <div class="command-item"><div class="command-name">rate</div><div class="command-desc">Rate something</div></div>
+                <div class="command-item"><div class="command-name">math</div><div class="command-desc">Calculate a math expression</div></div>
+                <div class="command-item"><div class="command-name">ship</div><div class="command-desc">Ship two users together</div></div>
+                <div class="command-item"><div class="command-name">button</div><div class="command-desc">Create an interactive button</div></div>
+                <div class="command-item"><div class="command-name">nitro</div><div class="command-desc">Send a fake Nitro gift</div></div>
+            </div>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Giveaway</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">giveaway</div><div class="command-desc">Giveaway commands</div></div>
+                <div class="command-item"><div class="command-name">giveaway start</div><div class="command-desc">Start a new giveaway</div></div>
+                <div class="command-item"><div class="command-name">giveaway end</div><div class="command-desc">End an active giveaway early</div></div>
+                <div class="command-item"><div class="command-name">giveaway reroll</div><div class="command-desc">Reroll the winners of a giveaway</div></div>
+                <div class="command-item"><div class="command-name">giveaway cancel</div><div class="command-desc">Cancel an active giveaway</div></div>
+                <div class="command-item"><div class="command-name">giveaway list</div><div class="command-desc">List active giveaways in the server</div></div>
+            </div>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Information</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">inviteinfo</div><div class="command-desc">Get information about a guild using their invite code</div></div>
+                <div class="command-item"><div class="command-name">userinfo</div><div class="command-desc">Get information about a user</div></div>
+                <div class="command-item"><div class="command-name">hex</div><div class="command-desc">Get a hex code from an image</div></div>
+                <div class="command-item"><div class="command-name">avatar</div><div class="command-desc">Get a user's avatar</div></div>
+                <div class="command-item"><div class="command-name">banner</div><div class="command-desc">Get a user's banner</div></div>
+                <div class="command-item"><div class="command-name">serverinfo</div><div class="command-desc">Get information about the server</div></div>
+                <div class="command-item"><div class="command-name">ping</div><div class="command-desc">Get the latency of the bot</div></div>
+                <div class="command-item"><div class="command-name">boosters</div><div class="command-desc">See a list of boosters in the guild</div></div>
+                <div class="command-item"><div class="command-name">boosters lost</div><div class="command-desc">Check how many boosters the guild has lost</div></div>
+                <div class="command-item"><div class="command-name">membercount</div><div class="command-desc">Get the member count of the guild</div></div>
+                <div class="command-item"><div class="command-name">roleinfo</div><div class="command-desc">Get information about a role</div></div>
+                <div class="command-item"><div class="command-name">serveravatar</div><div class="command-desc">Get a user's server avatar</div></div>
+                <div class="command-item"><div class="command-name">serverbanner</div><div class="command-desc">Get a user's server banner</div></div>
+                <div class="command-item"><div class="command-name">bots</div><div class="command-desc">Get a list of bots</div></div>
+                <div class="command-item"><div class="command-name">botinfo</div><div class="command-desc">Get information about the bot</div></div>
+                <div class="command-item"><div class="command-name">bans</div><div class="command-desc">Get a list of banned users</div></div>
+                <div class="command-item"><div class="command-name">uptime</div><div class="command-desc">Get the bot's uptime</div></div>
+                <div class="command-item"><div class="command-name">invite</div><div class="command-desc">Get the bot's invite</div></div>
+                <div class="command-item"><div class="command-name">banreason</div><div class="command-desc">Get a user's ban reason</div></div>
+                <div class="command-item"><div class="command-name">status</div><div class="command-desc">Get a link to the status page</div></div>
+                <div class="command-item"><div class="command-name">emoji</div><div class="command-desc">Returns a large emoji or server emote</div></div>
+                <div class="command-item"><div class="command-name">emoji steal</div><div class="command-desc">Download emote and add to server</div></div>
+                <div class="command-item"><div class="command-name">emoji remove</div><div class="command-desc">Remove an emoji from the server</div></div>
+            </div>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Moderation</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">ban</div><div class="command-desc">Ban a member from the server</div></div>
+                <div class="command-item"><div class="command-name">kick</div><div class="command-desc">Kick a user from the server</div></div>
+                <div class="command-item"><div class="command-name">nuke</div><div class="command-desc">Nuke the channel</div></div>
+                <div class="command-item"><div class="command-name">forcenickname</div><div class="command-desc">Force a nickname upon a user</div></div>
+                <div class="command-item"><div class="command-name">lockdown all</div><div class="command-desc">Lock all the channels</div></div>
+                <div class="command-item"><div class="command-name">lockdown ignore</div><div class="command-desc">Add a channel to the ignored list</div></div>
+                <div class="command-item"><div class="command-name">lockdown ignored</div><div class="command-desc">See a list of ignored channels</div></div>
+                <div class="command-item"><div class="command-name">lockdown role</div><div class="command-desc">Set the default lock role</div></div>
+                <div class="command-item"><div class="command-name">unlock all</div><div class="command-desc">Unlock all the channels</div></div>
+                <div class="command-item"><div class="command-name">purge</div><div class="command-desc">Purge messages</div></div>
+                <div class="command-item"><div class="command-name">purge user</div><div class="command-desc">Purge messages sent by a certain user</div></div>
+                <div class="command-item"><div class="command-name">purge bots</div><div class="command-desc">Purge messages sent by bots</div></div>
+                <div class="command-item"><div class="command-name">purge links</div><div class="command-desc">Purge messages containing links</div></div>
+                <div class="command-item"><div class="command-name">purge attachments</div><div class="command-desc">Purge messages containing attachments</div></div>
+                <div class="command-item"><div class="command-name">purge humans</div><div class="command-desc">Purge messages sent by humans</div></div>
+                <div class="command-item"><div class="command-name">purge stickers</div><div class="command-desc">Purge messages containing stickers</div></div>
+                <div class="command-item"><div class="command-name">purge mentions</div><div class="command-desc">Purge messages containing mentions</div></div>
+                <div class="command-item"><div class="command-name">stripstaff</div><div class="command-desc">Strip dangerous roles from a user</div></div>
+                <div class="command-item"><div class="command-name">imute</div><div class="command-desc">Remove a member's image permissions</div></div>
+                <div class="command-item"><div class="command-name">iunmute</div><div class="command-desc">Restore a member's image permissions</div></div>
+                <div class="command-item"><div class="command-name">reactionmute</div><div class="command-desc">Remove a member's reaction permissions</div></div>
+                <div class="command-item"><div class="command-name">reactionunmute</div><div class="command-desc">Restore a member's reaction permissions</div></div>
+                <div class="command-item"><div class="command-name">role create</div><div class="command-desc">Create a role</div></div>
+                <div class="command-item"><div class="command-name">role delete</div><div class="command-desc">Delete a role</div></div>
+                <div class="command-item"><div class="command-name">role all</div><div class="command-desc">Give everyone a role</div></div>
+                <div class="command-item"><div class="command-name">role color</div><div class="command-desc">Edit a role's colour</div></div>
+                <div class="command-item"><div class="command-name">role humans</div><div class="command-desc">Give all humans a role</div></div>
+                <div class="command-item"><div class="command-name">role hoist</div><div class="command-desc">Hoist or unhoist a role</div></div>
+                <div class="command-item"><div class="command-name">role mentionable</div><div class="command-desc">Edit a role's mentionability</div></div>
+                <div class="command-item"><div class="command-name">unban</div><div class="command-desc">Unban a user</div></div>
+                <div class="command-item"><div class="command-name">mute</div><div class="command-desc">Mute a member</div></div>
+                <div class="command-item"><div class="command-name">unmute</div><div class="command-desc">Unmute a member</div></div>
+                <div class="command-item"><div class="command-name">channel create</div><div class="command-desc">Create a channel</div></div>
+                <div class="command-item"><div class="command-name">channel delete</div><div class="command-desc">Delete a channel</div></div>
+                <div class="command-item"><div class="command-name">channel rename</div><div class="command-desc">Rename a channel</div></div>
+                <div class="command-item"><div class="command-name">channel nsfw</div><div class="command-desc">Mark a channel as NSFW / SFW</div></div>
+                <div class="command-item"><div class="command-name">reveal</div><div class="command-desc">Reveal a channel that's been hidden</div></div>
+                <div class="command-item"><div class="command-name">hide</div><div class="command-desc">Hide a channel</div></div>
+                <div class="command-item"><div class="command-name">leaves add</div><div class="command-desc">Add a leave message to a channel</div></div>
+                <div class="command-item"><div class="command-name">leaves remove</div><div class="command-desc">Remove a channel's leave message</div></div>
+                <div class="command-item"><div class="command-name">leaves test</div><div class="command-desc">Test a channel's leave message</div></div>
+                <div class="command-item"><div class="command-name">leaves list</div><div class="command-desc">List all leave messages in the guild</div></div>
+            </div>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Miscellaneous</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">afk</div><div class="command-desc">Display your AFK message</div></div>
+                <div class="command-item"><div class="command-name">urban</div><div class="command-desc">Lookup a word on urban dictionary</div></div>
+                <div class="command-item"><div class="command-name">quickpoll</div><div class="command-desc">Create a quick poll</div></div>
+                <div class="command-item"><div class="command-name">screenshot</div><div class="command-desc">Screenshot a website</div></div>
+                <div class="command-item"><div class="command-name">createembed</div><div class="command-desc">Create an embed</div></div>
+                <div class="command-item"><div class="command-name">embedcode</div><div class="command-desc">Get embed code from a message url</div></div>
+                <div class="command-item"><div class="command-name">pin</div><div class="command-desc">Pin a message</div></div>
+                <div class="command-item"><div class="command-name">unpin</div><div class="command-desc">Unpin a message</div></div>
+                <div class="command-item"><div class="command-name">donate</div><div class="command-desc">Learn why Xrypton doesn't take donations</div></div>
+                <div class="command-item"><div class="command-name">suggest</div><div class="command-desc">Suggest a feature for the developers</div></div>
+            </div>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Owner</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">whitelist</div><div class="command-desc">Whitelist a guild</div></div>
+                <div class="command-item"><div class="command-name">portal</div><div class="command-desc">Generate an invite link for a guild</div></div>
+                <div class="command-item"><div class="command-name">guilds</div><div class="command-desc">List all guilds the bot is in</div></div>
+                <div class="command-item"><div class="command-name">blacklist</div><div class="command-desc">Blacklist a user</div></div>
+                <div class="command-item"><div class="command-name">restart</div><div class="command-desc">Restart the bot</div></div>
+                <div class="command-item"><div class="command-name">push</div><div class="command-desc">Push to the github repo</div></div>
+                <div class="command-item"><div class="command-name">pull</div><div class="command-desc">Pull the latest updates from github</div></div>
+                <div class="command-item"><div class="command-name">eval</div><div class="command-desc">Run some python code</div></div>
+                <div class="command-item"><div class="command-name">sql</div><div class="command-desc">Execute some SQL</div></div>
+            </div>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Roleplay</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">roleplay</div><div class="command-desc">Roleplay related commands</div></div>
+                <div class="command-item"><div class="command-name">slap</div><div class="command-desc">Slap someone</div></div>
+                <div class="command-item"><div class="command-name">hug</div><div class="command-desc">Hug someone</div></div>
+                <div class="command-item"><div class="command-name">kiss</div><div class="command-desc">Kiss someone</div></div>
+                <div class="command-item"><div class="command-name">bite</div><div class="command-desc">Bite someone</div></div>
+                <div class="command-item"><div class="command-name">baka</div><div class="command-desc">Call someone a baka</div></div>
+                <div class="command-item"><div class="command-name">cuddle</div><div class="command-desc">Cuddle with someone</div></div>
+                <div class="command-item"><div class="command-name">feed</div><div class="command-desc">Feed someone</div></div>
+                <div class="command-item"><div class="command-name">handhold</div><div class="command-desc">Hold hands with someone</div></div>
+                <div class="command-item"><div class="command-name">handshake</div><div class="command-desc">Shake hands with someone</div></div>
+                <div class="command-item"><div class="command-name">highfive</div><div class="command-desc">High five someone</div></div>
+                <div class="command-item"><div class="command-name">kick</div><div class="command-desc">Kick someone</div></div>
+                <div class="command-item"><div class="command-name">pat</div><div class="command-desc">Pat someone</div></div>
+                <div class="command-item"><div class="command-name">punch</div><div class="command-desc">Punch someone</div></div>
+                <div class="command-item"><div class="command-name">peck</div><div class="command-desc">Peck someone</div></div>
+                <div class="command-item"><div class="command-name">poke</div><div class="command-desc">Poke someone</div></div>
+                <div class="command-item"><div class="command-name">shoot</div><div class="command-desc">Shoot someone</div></div>
+                <div class="command-item"><div class="command-name">cry</div><div class="command-desc">Let it all out</div></div>
+            </div>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Server</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">welcome add</div><div class="command-desc">Add a welcome message</div></div>
+                <div class="command-item"><div class="command-name">welcome remove</div><div class="command-desc">Remove a welcome message</div></div>
+                <div class="command-item"><div class="command-name">welcome view</div><div class="command-desc">Test a welcome message</div></div>
+                <div class="command-item"><div class="command-name">welcome list</div><div class="command-desc">Show a list of welcome channels</div></div>
+                <div class="command-item"><div class="command-name">prefix add</div><div class="command-desc">Change the prefix</div></div>
+                <div class="command-item"><div class="command-name">prefix remove</div><div class="command-desc">Reset the prefix back to default</div></div>
+                <div class="command-item"><div class="command-name">alias add</div><div class="command-desc">Add a custom alias</div></div>
+                <div class="command-item"><div class="command-name">alias remove</div><div class="command-desc">Remove a custom alias</div></div>
+                <div class="command-item"><div class="command-name">alias list</div><div class="command-desc">Get a list of custom aliases</div></div>
+                <div class="command-item"><div class="command-name">autorole add</div><div class="command-desc">Add an autorole</div></div>
+                <div class="command-item"><div class="command-name">autorole remove</div><div class="command-desc">Remove an autorole</div></div>
+                <div class="command-item"><div class="command-name">autorole list</div><div class="command-desc">See a list of autoroles</div></div>
+                <div class="command-item"><div class="command-name">stickymessage add</div><div class="command-desc">Add a sticky message to a channel</div></div>
+                <div class="command-item"><div class="command-name">stickymessage remove</div><div class="command-desc">Remove a sticky message from a channel</div></div>
+                <div class="command-item"><div class="command-name">boosts add</div><div class="command-desc">Add a boost message to a channel</div></div>
+                <div class="command-item"><div class="command-name">boosts remove</div><div class="command-desc">Remove a boost message from a channel</div></div>
+                <div class="command-item"><div class="command-name">boosts view</div><div class="command-desc">View a boost message for a channel</div></div>
+                <div class="command-item"><div class="command-name">boosts list</div><div class="command-desc">Show a list of boost channels</div></div>
+                <div class="command-item"><div class="command-name">autoresponder add</div><div class="command-desc">Add an autoresponder</div></div>
+                <div class="command-item"><div class="command-name">autoresponder delete</div><div class="command-desc">Delete an autoresponder</div></div>
+                <div class="command-item"><div class="command-name">autoresponder list</div><div class="command-desc">Show a list of autoresponders</div></div>
+                <div class="command-item"><div class="command-name">boosterrole setup</div><div class="command-desc">Enable the booster role module</div></div>
+                <div class="command-item"><div class="command-name">boosterrole disable</div><div class="command-desc">Disable the booster role module</div></div>
+                <div class="command-item"><div class="command-name">boosterrole base</div><div class="command-desc">Set the base for the booster role</div></div>
+                <div class="command-item"><div class="command-name">boosterrole create</div><div class="command-desc">Create your booster role</div></div>
+                <div class="command-item"><div class="command-name">boosterrole name</div><div class="command-desc">Rename your booster role</div></div>
+                <div class="command-item"><div class="command-name">boosterrole colour</div><div class="command-desc">Set your booster role color</div></div>
+                <div class="command-item"><div class="command-name">boosterrole icon</div><div class="command-desc">Set your booster role icon</div></div>
+                <div class="command-item"><div class="command-name">boosterrole delete</div><div class="command-desc">Delete your booster role</div></div>
+                <div class="command-item"><div class="command-name">leaves add</div><div class="command-desc">Add a leave message to a channel</div></div>
+                <div class="command-item"><div class="command-name">leaves remove</div><div class="command-desc">Remove a channel's leave message</div></div>
+                <div class="command-item"><div class="command-name">leaves test</div><div class="command-desc">Test a channel's leave message</div></div>
+                <div class="command-item"><div class="command-name">leaves list</div><div class="command-desc">List all leave messages in the guild</div></div>
+                <div class="command-item"><div class="command-name">fakeperms add</div><div class="command-desc">Add a fakeperm to a role</div></div>
+                <div class="command-item"><div class="command-name">fakeperms list</div><div class="command-desc">List all fake permissions for a role</div></div>
+                <div class="command-item"><div class="command-name">fakeperms remove</div><div class="command-desc">Remove a fakeperm from a role</div></div>
+                <div class="command-item"><div class="command-name">fakeperms perms</div><div class="command-desc">List all valid permissions for fakeperms</div></div>
+            </div>
+        </div>
+
+        <div class="commands-section">
+            <div class="commands-category">Snipe</div>
+            <div class="commands-grid">
+                <div class="command-item"><div class="command-name">reactionsnipe</div><div class="command-desc">See recently removed reactions</div></div>
+                <div class="command-item"><div class="command-name">editsnipe</div><div class="command-desc">See edited messages</div></div>
+                <div class="command-item"><div class="command-name">snipe</div><div class="command-desc">See deleted messages</div></div>
+                <div class="command-item"><div class="command-name">clearsnipes</div><div class="command-desc">Clear all sniped messages in the guild</div></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">Xrypton</div>
+            <p>&copy; 2026 Xrypton. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('.commands-section');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        setTimeout(() => {
+                            entry.target.classList.add('visible');
+                        }, index * 80);
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+            sections.forEach(section => observer.observe(section));
+        });
+    </script>
+</body>
+</html>

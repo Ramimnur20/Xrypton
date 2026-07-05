@@ -29,7 +29,7 @@ from discord.ext.commands import Context as BaseContext
 from base.config import *
 
 if TYPE_CHECKING:
-    from base.bleed import Bot
+    from base.Xrypton import Bot
 
 
 class FieldDict(TypedDict, total=False):
@@ -205,7 +205,7 @@ class Context(BaseContext):
         return await self.send(embed=embeds[0], view=Paginator(self, embeds), **kwargs)
 
 
-class BleedHelp(HelpCommand):
+class XryptonHelp(HelpCommand):
     context: "Context"
 
     def __init__(self, **options):
@@ -216,13 +216,81 @@ class BleedHelp(HelpCommand):
         )
 
     async def send_bot_help(self, mapping):
-        commands_list = []
-        for command_list in mapping.values():
-            commands_list.extend(command_list)
-
-        command_names = ', '.join(f"`{cmd.qualified_name}`" for cmd in commands_list if not cmd.hidden)
+        embeds = []
+        categories = {}
         
-        await self.context.reply(f"{command_names}")
+        # Organize commands by cog (category)
+        for cog, command_list in mapping.items():
+            commands = [cmd for cmd in command_list if not cmd.hidden]
+            if commands:
+                cog_name = cog.qualified_name if cog else "Uncategorized"
+                if cog_name not in ["Jishaku", "Syncing"]:
+                    categories[cog_name] = commands
+        
+        prefix_commands = {
+            cmd for cmds in categories.values() for cmd in cmds
+        }
+        
+        slash_commands = [
+            cmd for cmd in self.context.bot.tree.walk_commands()
+            if not getattr(cmd, "hidden", False)
+        ]
+        
+        total_count = len(prefix_commands) + len(slash_commands)
+        
+        # Create index embed (always page 1) with black accent
+        index_embed = Embed(
+            title="Xrypton Help",
+            description=f"> {total_count} Commands in Total\n-# click the buttons below to view all commands",
+            color=COLORS.black,
+        )
+        index_embed.set_thumbnail(url="https://zne.breed.rip/assets/xrypton/avatar.png")
+        index_embed.set_author(
+            name=self.context.author.name,
+            icon_url=self.context.author.display_avatar.url,
+        )
+        embeds.append(index_embed)
+        
+        # Create embeds for each category
+        for category_name, commands in sorted(categories.items()):
+            if category_name in ["Jishaku", "Owner"]:
+                continue
+                
+            embed = Embed(
+                title=f"📚 {category_name} Commands",
+                color=COLORS.neutral,
+                description=f"Use `,help <command>` for more info\n\n"
+            )
+            
+            command_list = []
+            for cmd in sorted(commands, key=lambda c: c.qualified_name):
+                command_name = cmd.qualified_name
+                aliases = f" ({', '.join(cmd.aliases)})" if cmd.aliases else ""
+                command_list.append(
+                    f"• `{command_name}`{aliases} - {cmd.description or 'No description'}"
+                )
+
+                if isinstance(cmd, Group) and cmd.commands:
+                    for subcmd in sorted(cmd.commands, key=lambda c: c.qualified_name):
+                        if subcmd.hidden:
+                            continue
+                        command_list.append(
+                            f"    • `{subcmd.qualified_name}` - {subcmd.description or 'No description'}"
+                        )
+            
+            embed.description += "\n".join(command_list)
+            embed.set_author(
+                name=self.context.author.name,
+                icon_url=self.context.author.display_avatar.url,
+            )
+            embed.set_footer(text=f"Total Commands: {total_count}")
+            embeds.append(embed)
+        
+        if len(embeds) == 1:
+            await self.context.send(embed=embeds[0])
+        else:
+            await self.context.paginate(embeds)
+
 
     async def send_command_help(self, command: Command):
         aliases = command.aliases
@@ -236,7 +304,7 @@ class BleedHelp(HelpCommand):
             Embed(
                 color=COLORS.neutral,
                 title=f"Command: {command.qualified_name}",
-                description=command.help or "No description provided",
+                description=command.description or "No description provided",
             )
             .set_author(
                 name=self.context.author.name,

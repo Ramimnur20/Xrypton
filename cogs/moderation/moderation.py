@@ -48,7 +48,8 @@ from discord.ext.commands import (
     cooldown,
     BucketType,
     Author,
-    hybrid_command,
+    command,
+    hybrid_group,
     group,
     Cog,
 )
@@ -206,7 +207,7 @@ class Moderation(CogMeta):
             if check:
                 return await before.edit(nick=check["name"])
 
-    @group(
+    @hybrid_group(
         name="lockdown",
         aliases=["lock"],
         invoke_without_command=True,
@@ -389,7 +390,7 @@ class Moderation(CogMeta):
             f"{role.mention} is now set as the **default lock role**."
         )
 
-    @group(name="unlock", invoke_without_command=True, description="Unlocks a channel.")
+    @hybrid_group(name="unlock", invoke_without_command=True, description="Unlocks a channel.")
     @has_permissions(manage_channels=True)
     async def unlock(
         self,
@@ -466,7 +467,7 @@ class Moderation(CogMeta):
             f"**{unlocked_channels} channels** have been unlocked."
         )
 
-    @group(
+    @hybrid_group(
         name="purge",
         description="Purge messages.",
         aliases=["c"],
@@ -672,16 +673,18 @@ class Moderation(CogMeta):
             color=COLORS.red,
         )
 
-    @group(
+    @hybrid_group(
         name="role",
         aliases=["r"],
         invoke_without_command=True,
         description="Role a user.",
     )
     @has_permissions(manage_roles=True)
-    async def role(self, ctx: Context, user: Member, role: Union[Role, str]):
+    async def role(self, ctx: Context, user: Member,         role: Role):
         if isinstance(role, str):
-            role = ctx.guild.get_role(role)
+            role = discord.utils.get(ctx.guild.roles, name=role)
+        if role is None:
+            return await ctx.warn("Role not found.")
 
         if role in user.roles:
             await user.remove_roles(role)
@@ -704,20 +707,22 @@ class Moderation(CogMeta):
 
     @role.command(name="delete", aliases=["del"], description="Delete a role")
     @has_permissions(manage_roles=True)
-    async def role_delete(self, ctx: Context, *, role: Union[Role, str]):
+    async def role_delete(self, ctx: Context, *,         role: Role):
         if isinstance(role, str):
             role = discord.utils.get(ctx.guild.roles, name=role)
+        if role is None:
+            return await ctx.warn("Role not found.")
 
         await role.delete()
         return await ctx.approve(f"Deleted **role** `{role.name}`")
 
     @role.command(name="all", description="Give everyone a role.")
     @has_permissions(manage_roles=True)
-    async def role_all(self, ctx: Context, role: Union[Role, str]):
+    async def role_all(self, ctx: Context,         role: Role):
         if isinstance(role, str):
-            role = ctx.guild.get_role(role)
-
-        async with self.role_lock[ctx.guild.id]:
+            role = discord.utils.get(ctx.guild.roles, name=role)
+        if role is None:
+            return await ctx.warn("Role not found.")
             tasks = [
                 m.add_roles(role, reason=f"Role all invoked by {ctx.author}")
                 for m in ctx.guild.members
@@ -740,11 +745,11 @@ class Moderation(CogMeta):
 
     @role.command(name="color", aliases=["colour"], description="Edit a role's colour")
     @has_permissions(manage_roles=True)
-    async def role_color(self, ctx: Context, hex: str, *, role: Union[Role, str]):
+    async def role_color(self, ctx: Context, hex: str, *,         role: Role):
         if isinstance(role, str):
-            role = ctx.guild.get_role(role)
-
-        if not re.match(r"^#[0-9A-Fa-f]{6}$", hex):
+            role = discord.utils.get(ctx.guild.roles, name=role)
+        if role is None:
+            return await ctx.warn("Role not found.")
             return await ctx.warn(f"Invalid **hex code**.")
 
         if role.position >= ctx.me.top_role.position:
@@ -759,11 +764,11 @@ class Moderation(CogMeta):
 
     @role.command(name="humans", description="Give all humans a role.")
     @has_permissions(manage_roles=True)
-    async def role_humans(self, ctx: Context, *, role: Union[Role, str]):
+    async def role_humans(self, ctx: Context, *,         role: Role):
         if isinstance(role, str):
-            role = ctx.guild.get_role(role)
-
-        async with self.role_lock[ctx.guild.id]:
+            role = discord.utils.get(ctx.guild.roles, name=role)
+        if role is None:
+            return await ctx.warn("Role not found.")
             tasks = [
                 m.add_roles(role, reason=f"Role added by {ctx.author}")
                 for m in ctx.guild.members
@@ -787,9 +792,11 @@ class Moderation(CogMeta):
 
     @role.command(name="hoist", description="Hoist / unhoist a role")
     @has_permissions(manage_roles=True)
-    async def role_hoist(self, ctx: Context, *, role: Union[Role, str]):
+    async def role_hoist(self, ctx: Context, *,         role: Role):
         if isinstance(role, str):
-            role = ctx.guild.get_role(role)
+            role = discord.utils.get(ctx.guild.roles, name=role)
+        if role is None:
+            return await ctx.warn("Role not found.")
 
         if role.hoist == False:
             await role.edit(hoist=True)
@@ -800,9 +807,11 @@ class Moderation(CogMeta):
 
     @role.command(name="mentionable", description="Edit a roles mentionability.")
     @has_permissions(manage_roles=True)
-    async def role_mentionable(self, ctx: Context, *, role: Union[Role, str]):
+    async def role_mentionable(self, ctx: Context, *,         role: Role):
         if isinstance(role, str):
-            role = ctx.guild.get_role(role)
+            role = discord.utils.get(ctx.guild.roles, name=role)
+        if role is None:
+            return await ctx.warn("Role not found.")
 
         if role.hoist == False:
             await role.edit(mentionable=True)
@@ -820,7 +829,7 @@ class Moderation(CogMeta):
     @command(name="mute", description="mute a member")
     @has_permissions(moderate_members=True)
     async def mute(
-        self, ctx: Context, member: Union[Member, str], *, time: str = "60s"
+        self, ctx: Context,         member: Member, *, time: str = "60s"
     ):
         if isinstance(member, str):
             member = ctx.guild.fetch_member(member.id)
@@ -858,7 +867,7 @@ class Moderation(CogMeta):
 
     @command(name="unmute", description="Unmute a member")
     @has_permissions(moderate_members=True)
-    async def unmute(self, ctx: Context, *, member: Union[Member, str]):
+    async def unmute(self, ctx: Context, *,         member: Member):
         if isinstance(member, str):
             member = ctx.guild.fetch_member(member.id)
 
@@ -886,7 +895,7 @@ class Moderation(CogMeta):
             color=COLORS.red,
         )
 
-    @group(name="channel", invoke_without_command=True, description="Edit channels.")
+    @hybrid_group(name="channel", invoke_without_command=True, description="Edit channels.")
     @has_permissions(manage_channels=True)
     async def channel(self, ctx: Context):
         return await ctx.send_help(ctx.command)
