@@ -560,3 +560,109 @@ img, svg { display: block; }
   .card-wide, .card-tall { grid-column: span 1; grid-row: span 1; }
   .hero-meta { gap: 28px; }
 }
+
+/* ---------- modal ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 7, 10, 0.72);
+  backdrop-filter: blur(10px);
+  padding: 24px;
+}
+.modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.6);
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.modal-head h3 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.modal-close {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+.modal-close:hover { color: var(--text); }
+.modal-desc {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+}
+.modal-section h4 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-2);
+  margin-bottom: 12px;
+}
+.modal-args { display: flex; flex-direction: column; gap: 10px; }
+.arg-table {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.arg-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.arg-row:last-child { border-bottom: 0; }
+.arg-name {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color: var(--accent);
+  font-weight: 600;
+}
+.arg-type {
+  color: var(--muted-2);
+  font-size: 0.82rem;
+}
+.arg-req {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.req-yes {
+  color: var(--accent-3);
+  border-color: rgba(255, 92, 138, 0.3);
+  background: rgba(255, 92, 138, 0.08);
+}
+.req-no {
+  color: var(--muted-2);
+  border-color: var(--border);
+  background: var(--surface);
+}
+.no-args {
+  color: var(--muted-2);
+  font-size: 0.9rem;
+}

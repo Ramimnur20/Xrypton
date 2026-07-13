@@ -98,5 +98,21 @@
   </footer>
 
   <script src="assets/js/main.js"></script>
+
+  <div id="cmdModal" class="modal-overlay" style="display:none">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h3 id="modalTitle">Command</h3>
+        <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="modalDesc" class="modal-desc"></p>
+        <div class="modal-section">
+          <h4>Arguments</h4>
+          <div id="modalArgs" class="modal-args"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
