@@ -16,7 +16,8 @@ export default async function handler(req, res) {
 
   if (req.method === "POST") {
     try {
-      const body = await req.json();
+      const raw = await req.text();
+      const body = raw ? JSON.parse(raw) : {};
 
       if (!body || !Array.isArray(body.categories)) {
         return res.status(400).json({ error: "Invalid payload: categories array required", received: body });
