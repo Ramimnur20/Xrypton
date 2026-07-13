@@ -16,7 +16,11 @@ export default async function handler(req, res) {
 
   if (req.method === "POST") {
     try {
-      const raw = await req.text();
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      const raw = Buffer.concat(chunks).toString("utf-8");
       const body = raw ? JSON.parse(raw) : {};
 
       if (!body || !Array.isArray(body.categories)) {
