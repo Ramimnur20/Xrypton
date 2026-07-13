@@ -19,16 +19,16 @@ export default async function handler(req, res) {
       const body = await req.json();
 
       if (!body || !Array.isArray(body.categories)) {
-        return res.status(400).json({ error: "Invalid payload: categories array required" });
+        return res.status(400).json({ error: "Invalid payload: categories array required", received: body });
       }
 
       for (const category of body.categories) {
         if (!category.name || !Array.isArray(category.commands)) {
-          return res.status(400).json({ error: "Invalid category structure" });
+          return res.status(400).json({ error: "Invalid category structure", category });
         }
         for (const cmd of category.commands) {
           if (!validateCommand(cmd)) {
-            return res.status(400).json({ error: `Invalid command structure: ${cmd.name}` });
+            return res.status(400).json({ error: `Invalid command structure: ${cmd.name}`, cmd });
           }
         }
       }
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
       return res.status(200).json({ success: true, totalCommands: commandsCache.totalCommands });
     } catch (error) {
-      return res.status(400).json({ error: "Invalid JSON body" });
+      return res.status(400).json({ error: "Invalid JSON body", details: error.message });
     }
   }
 
