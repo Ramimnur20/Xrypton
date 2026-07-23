@@ -85,9 +85,13 @@
     }
   })();
 
-  /* ---- scroll reveal ---- */
-  const revealEls = document.querySelectorAll(
+  /* ---- scroll reveal (excludes elements inside .instant-fade sections) ---- */
+  const SKIP_SELECTORS = ".testimonials, .stats-grid, .terminal-block, .docs-content";
+  const rawReveal = document.querySelectorAll(
     ".section-head, .card, .feature, .quote, .cta, .bento, .feature-grid"
+  );
+  const revealEls = Array.from(rawReveal).filter(
+    (el) => !el.closest(SKIP_SELECTORS)
   );
   revealEls.forEach((el) => el.classList.add("reveal"));
 
@@ -107,6 +111,33 @@
   } else {
     revealEls.forEach((el) => el.classList.add("in"));
   }
+
+  /* ---- animated counters ---- */
+  const STAT_DURATION = 1800;
+  const statEls = document.querySelectorAll(".stat-value[data-target]");
+  const counterObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const target = parseInt(el.dataset.target, 10);
+          const suffix = el.dataset.suffix || "";
+          const start = performance.now();
+          const tick = (now) => {
+            const t = Math.min((now - start) / STAT_DURATION, 1);
+            const eased = 1 - Math.pow(1 - t, 3);
+            const current = Math.floor(eased * target);
+            el.textContent = current.toLocaleString() + suffix;
+            if (t < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+          counterObserver.unobserve(el);
+        }
+      });
+    },
+    { threshold: 0.5 }
+  );
+  statEls.forEach((el) => counterObserver.observe(el));
 
   /* ---- commands page: data + filter ---- */
   const mount = document.getElementById("cmdMount");

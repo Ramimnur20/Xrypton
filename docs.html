@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Docs — xrypton</title>
   <meta name="description" content="Learn how to configure xrypton's security features: Anti-Nuke, Join Gate, Fake Permissions and more." />
+  <meta name="theme-color" content="#0c0d0d" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
   <link rel="icon" href="assets/svg/logo.png" type="image/svg+xml" />
 </head>
@@ -19,8 +20,6 @@
     <div class="grid-overlay"></div>
   </div>
 
-
-  <!-- NAV -->
   <header class="nav" id="nav">
     <div class="container nav-inner">
       <a href="/" class="brand" aria-label="xrypton home">
@@ -72,33 +71,33 @@
                 <h3>Allowing users to configure the antinuke</h3>
                 <p>Designate trusted members as Anti-Nuke admins. Only admins can change the antinuke configuration, manage whitelists, and view logs.</p>
                 <div class="doc-notice">
-                  <code>,antinuke admin &lt;user&gt;</code> — grants a user antinuke admin permissions.<br />
-                  <span style="color:var(--muted-2);font-size:0.85rem">Arguments: <code>user</code> — Discord User</span>
+                  <span class="doc-cmd">,antinuke admin &lt;user&gt;</span> — grants a user antinuke admin permissions.<br />
+                  <span style="color:var(--muted-2);font-size:.85rem">Arguments: <span class="doc-cmd">user</span> — Discord User</span>
                 </div>
                 <img src="images/anadmin.png" alt="Adding an antinuke admin" class="doc-img" />
 
                 <h3>Exempting users from the antinuke</h3>
                 <p>Whitelist members so their actions are never flagged by the Anti-Nuke system. This is useful for server owners and trusted staff with high-level permissions.</p>
                 <div class="doc-notice">
-                  <code>,antinuke whitelist &lt;user&gt;</code> — whitelist a user.<br />
-                  <code>,antinuke whitelist remove &lt;user&gt;</code> — remove a user from the whitelist.<br />
-                  <span style="color:var(--muted-2);font-size:0.85rem">Arguments: <code>user</code> — Discord User</span>
+                  <span class="doc-cmd">,antinuke whitelist &lt;user&gt;</span> — whitelist a user.<br />
+                  <span class="doc-cmd">,antinuke whitelist remove &lt;user&gt;</span> — remove a user from the whitelist.<br />
+                  <span style="color:var(--muted-2);font-size:.85rem">Arguments: <span class="doc-cmd">user</span> — Discord User</span>
                 </div>
                 <img src="images/anwhitelist.png" alt="Managing antinuke whitelist" class="doc-img" />
 
                 <h3>Viewing the antinuke configuration</h3>
                 <p>Check the current Anti-Nuke settings, including action thresholds, punishment mode, and which channels are protected.</p>
                 <div class="doc-notice">
-                  <code>,antinuke config</code> — displays the current Anti-Nuke configuration.<br />
-                  <span style="color:var(--muted-2);font-size:0.85rem">Arguments: none</span>
+                  <span class="doc-cmd">,antinuke config</span> — displays the current Anti-Nuke configuration.<br />
+                  <span style="color:var(--muted-2);font-size:.85rem">Arguments: none</span>
                 </div>
                 <img src="images/anconfig.png" alt="Viewing antinuke configuration" class="doc-img" />
 
                 <h3>Viewing users with antinuke admin</h3>
                 <p>See all members who have been granted Anti-Nuke admin access.</p>
                 <div class="doc-notice">
-                  <code>,antinuke admins</code> — lists all Anti-Nuke admins.<br />
-                  <span style="color:var(--muted-2);font-size:0.85rem">Arguments: none</span>
+                  <span class="doc-cmd">,antinuke admins</span> — lists all Anti-Nuke admins.<br />
+                  <span style="color:var(--muted-2);font-size:.85rem">Arguments: none</span>
                 </div>
                 <img src="images/anadmins.png" alt="Viewing antinuke admins" class="doc-img" />
               </article>
@@ -115,8 +114,8 @@
                     <p>Run <span class="doc-cmd">,antiraid massjoin enable --do &lt;action&gt; --threshold &lt;number&gt;</span> to enable mass-join protection.</p>
                     <div class="doc-notice" style="margin-top:10px">
                       Arguments:<br />
-                      <code>--do</code> — action to take: <code>kick</code> or <code>ban</code><br />
-                      <code>--threshold</code> — number of joins allowed before triggering (e.g. <code>5</code>)
+                      <span class="doc-cmd">--do</span> — action to take: <span class="doc-cmd">kick</span> or <span class="doc-cmd">ban</span><br />
+                      <span class="doc-cmd">--threshold</span> — number of joins allowed before triggering (e.g. <span class="doc-cmd">5</span>)
                     </div>
                   </div>
                 </div>
@@ -133,8 +132,8 @@
                   </div>
                 </div>
                 <div class="doc-notice">
-                  <code>,antiraid massjoin disable</code> — disables mass-join protection.<br />
-                  <span style="color:var(--muted-2);font-size:0.85rem">Arguments: none</span>
+                  <span class="doc-cmd">,antiraid massjoin disable</span> — disables mass-join protection.<br />
+                  <span style="color:var(--muted-2);font-size:.85rem">Arguments: none</span>
                 </div>
               </article>
 
@@ -149,20 +148,20 @@
                 <h3>Using Fake Permissions</h3>
                 <p>Fake Permissions provides the following commands to manage dangerous permissions on roles:</p>
                 <div class="doc-notice">
-                  <code>,fakeperms add &lt;role&gt; &lt;permission&gt;</code> — adds a fake permission to a role.<br />
-                  <span style="color:var(--muted-2);font-size:0.85rem">Arguments: <code>role</code> — Discord Role, <code>permission</code> — permission name (e.g. <code>administrator</code>, <code>manage_webhooks</code>)</span>
+                  <span class="doc-cmd">,fakeperms add &lt;role&gt; &lt;permission&gt;</span> — adds a fake permission to a role.<br />
+                  <span style="color:var(--muted-2);font-size:.85rem">Arguments: <span class="doc-cmd">role</span> — Discord Role, <span class="doc-cmd">permission</span> — permission name (e.g. <span class="doc-cmd">administrator</span>, <span class="doc-cmd">manage_webhooks</span>)</span>
                 </div>
                 <div class="doc-notice">
-                  <code>,fakeperms list &lt;role&gt;</code> — lists all fake permissions assigned to a role.<br />
-                  <span style="color:var(--muted-2);font-size:0.85rem">Arguments: <code>role</code> — Discord Role</span>
+                  <span class="doc-cmd">,fakeperms list &lt;role&gt;</span> — lists all fake permissions assigned to a role.<br />
+                  <span style="color:var(--muted-2);font-size:.85rem">Arguments: <span class="doc-cmd">role</span> — Discord Role</span>
                 </div>
                 <div class="doc-notice">
-                  <code>,fakeperms remove &lt;role&gt; &lt;permission&gt;</code> — removes a fake permission from a role.<br />
-                  <span style="color:var(--muted-2);font-size:0.85rem">Arguments: <code>role</code> — Discord Role, <code>permission</code> — permission name</span>
+                  <span class="doc-cmd">,fakeperms remove &lt;role&gt; &lt;permission&gt;</span> — removes a fake permission from a role.<br />
+                  <span style="color:var(--muted-2);font-size:.85rem">Arguments: <span class="doc-cmd">role</span> — Discord Role, <span class="doc-cmd">permission</span> — permission name</span>
                 </div>
                 <div class="doc-notice">
-                  <code>,fakeperms perms</code> — shows a paginated list of all valid permission names you can use.<br />
-                  <span style="color:var(--muted-2);font-size:0.85rem">Arguments: none</span>
+                  <span class="doc-cmd">,fakeperms perms</span> — shows a paginated list of all valid permission names you can use.<br />
+                  <span style="color:var(--muted-2);font-size:.85rem">Arguments: none</span>
                 </div>
               </article>
             </div>
@@ -203,7 +202,7 @@
       </div>
     </div>
     <div class="container footer-bottom">
-      <span>Copyright © 2026 xrypton.bot, All rights reserved.</span>
+      <span>Copyright &copy; 2026 xrypton.bot, All rights reserved.</span>
     </div>
   </footer>
 

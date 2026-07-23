@@ -5,15 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>xrypton — Discord's premier all-in-one bot</title>
   <meta name="description" content="xrypton is Discord's premier all-in-one bot for management, security and engagement. Anti-nuke, anti-raid, voicemaster, economy, levels and more." />
-  <meta name="theme-color" content="#06070a" />
+  <meta name="theme-color" content="#0c0d0d" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
   <link rel="icon" href="assets/svg/logo.png" type="image/svg+xml" />
 </head>
 <body>
-  <!-- ambient background -->
   <div class="ambient" aria-hidden="true">
     <span class="blob blob-1"></span>
     <span class="blob blob-2"></span>
@@ -21,7 +20,6 @@
     <div class="grid-overlay"></div>
   </div>
 
-  <!-- NAV -->
   <header class="nav" id="nav">
     <div class="container nav-inner">
       <a href="/" class="brand" aria-label="xrypton home">
@@ -35,7 +33,7 @@
           Dashboard
           <img src="assets/svg/coming-soon.svg" alt="Coming Soon" class="badge-soon" />
         </a>
-        <a href="https://discord.gg/xrypton" class="btn btn-invite nav-cta">Invite</a>
+        <a href="https://discord.gg/cGjFB9zEN8" class="btn btn-invite nav-cta">Invite</a>
       </nav>
       <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
         <span></span><span></span><span></span>
@@ -44,46 +42,96 @@
   </header>
 
   <main>
-    <!-- HERO -->
+    <!-- HERO — split grid layout -->
     <section class="hero">
       <div class="container hero-inner">
-        <a class="pill" href="/commands">
-          <span class="pill-dot"></span> 100+ commands across 15 modules
-          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
-        <h1 class="hero-title">
-          xrypton is Discord's<br />
-          <span class="grad">premier all-in-one bot</span>
-        </h1>
-        <p class="hero-sub">
-          Meet the leading bot for management and security. Built to elevate your
-          community's experience, streamline server moderation, and give you access
-          to premium tools for every necessity.
-        </p>
-        <div class="hero-actions">
-          <a href="https://discord.com/oauth2/authorize?client_id=000000000000000000&permissions=8&scope=bot%20applications.commands" class="btn btn-primary">
-            Invite to Discord
+        <div class="hero-left">
+          <a class="hero-pill" href="/commands">
+            <span class="pill-dot"></span> 100+ commands across 15 modules
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>
-          <a href="https://discord.gg/xrypton" class="btn btn-ghost">
-            Join Support Server
-          </a>
+          <h1 class="hero-title">
+            xrypton is Discord's<br />
+            <span class="grad">premier all-in-one bot</span>
+          </h1>
+          <p class="hero-sub">
+            Meet the leading bot for management and security. Built to elevate your
+            community's experience, streamline server moderation, and give you access
+            to premium tools for every necessity.
+          </p>
+          <div class="hero-actions">
+            <a href="https://discord.com/oauth2/authorize?client_id=000000000000000000&permissions=8&scope=bot%20applications.commands" class="btn btn-primary">
+              Invite to Discord
+            </a>
+            <a href="https://discord.gg/xrypton" class="btn btn-ghost">
+              Join Support Server
+            </a>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <strong>50+</strong>
+              <span>servers protected</span>
+            </div>
+            <div class="hero-stat">
+              <strong>99.99%</strong>
+              <span>uptime SLA</span>
+            </div>
+            <div class="hero-stat">
+              <strong>24/7</strong>
+              <span>active monitoring</span>
+            </div>
+          </div>
         </div>
-        <div class="hero-meta">
-          <div class="hero-stat">
-            <strong>50+</strong>
-            <span>servers protected</span>
-          </div>
-          <div class="hero-stat">
-            <strong>99.99%</strong>
-            <span>uptime SLA</span>
-          </div>
-          <div class="hero-stat">
-            <strong>24/7</strong>
-            <span>active monitoring</span>
+        <div class="hero-right">
+          <div class="discord-mock">
+            <div class="discord-mock-bar">
+              <span class="discord-dot dr"></span>
+              <span class="discord-dot dy"></span>
+              <span class="discord-dot dg"></span>
+              <span class="discord-mock-bar-title">xrypton — #support</span>
+            </div>
+            <div class="discord-mock-body">
+              <div class="dm-row">
+                <div class="dm-avatar">x</div>
+                <div class="dm-bubble">
+                  <div class="dm-name">xrypton</div>
+                  <div class="dm-text">Welcome to xrypton! Use <span class="doc-cmd" style="display:inline;padding:2px 6px;font-size:.8rem;">,help</span> to see all commands.</div>
+                </div>
+              </div>
+              <div class="dm-row me">
+                <div class="dm-avatar" style="background:linear-gradient(135deg,#4a7f8a,#2a5a65);">V</div>
+                <div class="dm-bubble">
+                  <div class="dm-name">Voby</div>
+                  <div class="dm-text">How do I set up Anti-Nuke?</div>
+                </div>
+              </div>
+              <div class="dm-row">
+                <div class="dm-avatar">x</div>
+                <div class="dm-bubble">
+                  <div class="dm-name">xrypton</div>
+                  <div class="dm-text">Run <span class="doc-cmd" style="display:inline;padding:2px 6px;font-size:.8rem;">,antinuke enable</span> and set your threshold. I'll handle the rest.</div>
+                </div>
+              </div>
+              <div class="dm-input-bar">
+                <span class="dm-input-text">Message #support</span>
+                <span class="dm-input-badge"> xrypton</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- EVENT PILL BANNER -->
+    <div class="event-pill-banner">
+      <div class="container">
+        <a href="/commands" class="pill-event">
+          <span class="ev-dot"></span>
+          New: VoiceMaster v2.0 is now live — check out the new features
+          <svg class="ev-arrow" viewBox="0 0 24 24" width="14" height="14"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
 
     <!-- TRUSTED MARQUEE -->
     <section class="marquee" aria-label="Communities using xrypton">
@@ -91,39 +139,58 @@
         <p>Powering communities across Discord</p>
       </div>
       <div class="marquee-track" id="marqueeTrack">
-        <!-- duplicated for seamless loop -->
         <div class="marquee-group" data-group="1"></div>
         <div class="marquee-group" data-group="2" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <!-- STATS GRID — 3-column CSS Grid -->
+    <section class="stats-section">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" data-target="65" data-suffix="+">0</div>
+            <div class="stat-label">Servers Protected</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">99.99%</div>
+            <div class="stat-label">Uptime SLA</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">5800+</div>
+            <div class="stat-label">Users Served</div>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- SECURITY BENTO -->
     <section class="section">
       <div class="container">
-        <div class="section-head">
+        <div class="section-head reveal">
           <span class="eyebrow">Security First</span>
           <h2>Premium Moderation and Security</h2>
           <p>We provide you with the best tools to keep your community clean, safe and secure.</p>
         </div>
-        <div class="bento bento-security">
-          <article class="card card-wide glow-cyan">
-            <div class="card-icon">🛡️</div>
+        <div class="bento bento-security reveal">
+          <article class="card card-wide">
+            <div class="card-icon">&#x1F6E1;&#xFE0F;</div>
             <h3>Anti-Nuke</h3>
             <p>Easily prevent malicious attacks and griefing with a customizable threshold set by you. Roll back bans, role deletes and channel wipes automatically.</p>
             <div class="card-art art-nuke"></div>
           </article>
           <article class="card">
-            <div class="card-icon">🚪</div>
+            <div class="card-icon">&#x1F6AA;</div>
             <h3>Anti-Raid</h3>
             <p>Protect against targeted bot raids with mass-join, avatar and account-age filters.</p>
           </article>
           <article class="card">
-            <div class="card-icon">🔍</div>
+            <div class="card-icon">&#x1F50D;</div>
             <h3>Filters</h3>
             <p>Keep any chat clean with our many automated filtering options — links, spam, invites and more.</p>
           </article>
           <article class="card card-wide">
-            <div class="card-icon">🔐</div>
+            <div class="card-icon">&#x1F510;</div>
             <h3>Fake Permissions</h3>
             <p>Remove all dangerous Discord permissions that can be abused through the API, with one-click lockdown.</p>
             <div class="card-art art-perms"></div>
@@ -139,30 +206,30 @@
     <!-- VOICEMASTER BENTO -->
     <section class="section">
       <div class="container">
-        <div class="section-head">
+        <div class="section-head reveal">
           <span class="eyebrow">VoiceMaster</span>
           <h2>Personal channels with VoiceMaster</h2>
           <p>Temporary, personalized voice channels for your community.</p>
         </div>
-        <div class="bento bento-voice">
-          <article class="card card-tall glow-violet">
-            <div class="card-icon">🎛️</div>
+        <div class="bento bento-voice reveal">
+          <article class="card card-tall">
+            <div class="card-icon">&#x1F3A5;&#xFE0F;</div>
             <h3>VoiceMaster Interface</h3>
             <p>Powerful control for your personal voice channel, with an intuitive built-in chat interface.</p>
             <div class="card-art art-voice"></div>
           </article>
           <article class="card">
-            <div class="card-icon">⚡</div>
+            <div class="card-icon">&#x26A1;</div>
             <h3>Easy Setup</h3>
             <p>Spend seconds, not hours. One command and it's ready to go.</p>
           </article>
           <article class="card">
-            <div class="card-icon">🏷️</div>
+            <div class="card-icon">&#x1F3F7;&#xFE0F;</div>
             <h3>Roles</h3>
             <p>Grant custom roles to members joined in your voice channel.</p>
           </article>
           <article class="card card-wide">
-            <div class="card-icon">🔒</div>
+            <div class="card-icon">&#x1F512;</div>
             <h3>Lock, Ghost &amp; Limit</h3>
             <p>Lock, unlock, hide, rename, set bitrate and manage member limits — all from a single panel.</p>
             <div class="card-art art-controls"></div>
@@ -178,34 +245,34 @@
     <!-- ECONOMY & LEVELS -->
     <section class="section">
       <div class="container">
-        <div class="section-head">
+        <div class="section-head reveal">
           <span class="eyebrow">Engagement</span>
           <h2>Economy, Levels &amp; Community</h2>
           <p>Everything you need to keep members active and coming back.</p>
         </div>
-        <div class="bento bento-engage">
-          <article class="card glow-cyan">
-            <div class="card-icon">💰</div>
+        <div class="bento bento-engage reveal">
+          <article class="card">
+            <div class="card-icon">&#x1F4B0;</div>
             <h3>Economy</h3>
             <p>A full virtual currency system — Daily, work, rob, shop, leaderboards and more to reward activity.</p>
           </article>
           <article class="card">
-            <div class="card-icon">📈</div>
+            <div class="card-icon">&#x1F4C8;</div>
             <h3>Levels</h3>
             <p>Leveling system so users rank up and track experience across your server.</p>
           </article>
           <article class="card">
-            <div class="card-icon">🎉</div>
+            <div class="card-icon">&#x1F389;</div>
             <h3>Giveaways</h3>
             <p>Host giveaways fast and easily for your server's members.</p>
           </article>
           <article class="card">
-            <div class="card-icon">🎫</div>
+            <div class="card-icon">&#x1F3AB;</div>
             <h3>Tickets</h3>
             <p>Clean, moderated support tickets so your staff can help members in private.</p>
           </article>
           <article class="card card-wide">
-            <div class="card-icon">🕵️</div>
+            <div class="card-icon">&#x1F575;&#xFE0F;</div>
             <h3>Snipe</h3>
             <p>Advanced sniping to recover deleted messages, images, videos, edits and reactions.</p>
             <div class="card-art art-snipe"></div>
@@ -217,23 +284,99 @@
     <!-- COUNTLESS FEATURES -->
     <section class="section">
       <div class="container">
-        <div class="section-head">
+        <div class="section-head reveal">
           <span class="eyebrow">All-in-one</span>
           <h2>Countless more Features</h2>
           <p>Never worry about needing another bot for anything else — we've got you covered.</p>
         </div>
-        <div class="feature-grid">
-          <div class="feature"><span class="feature-ic">🎮</span><h4>Games</h4><p>Play blackjack, tic-tac-toe and more with your friends.</p></div>
-          <div class="feature"><span class="feature-ic">😎</span><h4>Fun</h4><p>Memes, image manipulation, text-to-speech and 80+ voices.</p></div>
-          <div class="feature"><span class="feature-ic">ℹ️</span><h4>Information</h4><p>Server, user and avatar stats at a glance.</p></div>
-          <div class="feature"><span class="feature-ic">🤖</span><h4>Auto Responders</h4><p>Set automatic replies that match any trigger.</p></div>
-          <div class="feature"><span class="feature-ic">🌐</span><h4>Translation</h4><p>Translate text quickly across 100+ languages.</p></div>
-          <div class="feature"><span class="feature-ic">🔢</span><h4>Counters</h4><p>Create counter channels for simple server statistics.</p></div>
-          <div class="feature"><span class="feature-ic">⚡</span><h4>Reaction Triggers</h4><p>Advanced triggers on messages and reactions.</p></div>
-          <div class="feature"><span class="feature-ic">🔧</span><h4>Miscellaneous</h4><p>Dozens of handy utilities for any server.</p></div>
+        <div class="feature-grid reveal">
+          <div class="feature"><span class="feature-ic">&#x1F3AE;</span><h4>Games</h4><p>Play blackjack, tic-tac-toe and more with your friends.</p></div>
+          <div class="feature"><span class="feature-ic">&#x1F60E;</span><h4>Fun</h4><p>Memes, image manipulation, text-to-speech and 80+ voices.</p></div>
+          <div class="feature"><span class="feature-ic">&#x2139;&#xFE0F;</span><h4>Information</h4><p>Server, user and avatar stats at a glance.</p></div>
+          <div class="feature"><span class="feature-ic">&#x1F916;</span><h4>Auto Responders</h4><p>Set automatic replies that match any trigger.</p></div>
+          <div class="feature"><span class="feature-ic">&#x1F310;</span><h4>Translation</h4><p>Translate text quickly across 100+ languages.</p></div>
+          <div class="feature"><span class="feature-ic">&#x1F522;</span><h4>Counters</h4><p>Create counter channels for simple server statistics.</p></div>
+          <div class="feature"><span class="feature-ic">&#x26A1;</span><h4>Reaction Triggers</h4><p>Advanced triggers on messages and reactions.</p></div>
+          <div class="feature"><span class="feature-ic">&#x1F527;</span><h4>Miscellaneous</h4><p>Dozens of handy utilities for any server.</p></div>
         </div>
         <div class="center">
           <a href="/commands" class="btn btn-ghost">All Commands</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- TERMINAL BLOCK — JetBrains Mono -->
+    <section class="terminal-section">
+      <div class="container">
+        <div class="reveal">
+          <div class="terminal-block">
+            <div class="terminal-bar">
+              <span class="terminal-dot"></span>
+              <span class="terminal-dot"></span>
+              <span class="terminal-dot"></span>
+              <span class="terminal-bar-title">xrypton@server: ~/setup</span>
+            </div>
+            <div class="terminal-body">
+              <div class="t-line">
+                <span class="t-prompt">$</span>
+                <span class="t-cmd">antinuke enable</span>
+              </div>
+              <div class="t-line t-ok">
+                <span></span>
+                <span class="t-out">[antinuke] Module activated. Threshold: 3 actions/10s.</span>
+              </div>
+              <div class="t-line">
+                <span class="t-prompt">$</span>
+                <span class="t-cmd">antiraid massjoin enable --threshold 5</span>
+              </div>
+              <div class="t-line t-success">
+                <span></span>
+                <span class="t-out">[antiraid] Mass-join lock configured. Action: lock.</span>
+              </div>
+              <div class="t-line">
+                <span class="t-prompt">$</span>
+                <span class="t-cmd">fakeperms lockdown</span>
+              </div>
+              <div class="t-line t-warn">
+                <span></span>
+                <span class="t-out">[fakeperms] Lockdown applied. 3 dangerous permissions stripped.</span>
+              </div>
+              <div class="t-line">
+                <span class="t-prompt">$</span>
+                <span class="t-cmd">_</span>
+                <span class="t-out" style="animation: cursorBlink 1s step-end infinite;">&#x258C;</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RED-DANGER WARNING SECTION -->
+    <section class="danger-section">
+      <div class="container">
+        <div class="danger-card reveal">
+          <div class="danger-card-inner">
+            <div class="danger-icon">&#x26A0;&#xFE0F;</div>
+            <div class="danger-content">
+              <h3 class="danger-title">Critical Permissions Detected</h3>
+              <p class="danger-text">Your server has 3 roles with administator-level permissions that bypass channel overrides. An untrusted member with these roles could delete every channel.</p>
+              <div class="danger-list">
+                <div class="danger-item">
+                  <strong>&#x2716; Admin</strong>
+                  Manage Guild + Manage Roles
+                </div>
+                <div class="danger-item">
+                  <strong>&#x26A0; Moderator</strong>
+                  Manage Channels + Kick Members
+                </div>
+                <div class="danger-item">
+                  <strong>&#x1F6E1; Bot Manager</strong>
+                  Administrator
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -265,7 +408,7 @@
     <!-- CTA -->
     <section class="section">
       <div class="container">
-        <div class="cta">
+        <div class="cta reveal">
           <div class="cta-glow" aria-hidden="true"></div>
           <h2>Enhance your community's experience.</h2>
           <p>Get xrypton in your server today.</p>
@@ -275,7 +418,6 @@
     </section>
   </main>
 
-  <!-- FOOTER -->
   <footer class="footer">
     <div class="container footer-inner">
       <div class="footer-brand">
@@ -288,9 +430,9 @@
       <div class="footer-cols">
         <div class="footer-col">
           <h5>Bot</h5>
-          <a href="https://discord.com/oauth2/authorize?client_id=000000000000000000&permissions=8&scope=bot%20applications.commands">Invite</a>
+          <a href="https://ptb.discord.com/oauth2/authorize?client_id=1519695281627594842">Invite</a>
           <a href="/docs">Documentation</a>
-          <a href="https://discord.gg/xrypton">Support Server</a>
+          <a href="https://discord.gg/cGjFB9zEN8">Support Server</a>
         </div>
         <div class="footer-col">
           <h5>Resources</h5>
@@ -307,10 +449,16 @@
       </div>
     </div>
     <div class="container footer-bottom">
-      <span>Copyright © 2026 xrypton.bot, All rights reserved.</span>
+      <span>Copyright &copy; 2026 xrypton.bot, All rights reserved.</span>
     </div>
   </footer>
 
   <script src="assets/js/main.js"></script>
+  <style>
+    @keyframes cursorBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+  </style>
 </body>
 </html>

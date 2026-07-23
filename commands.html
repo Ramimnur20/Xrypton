@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Commands — xrypton</title>
   <meta name="description" content="Browse all xrypton commands across moderation, security, voicemaster, economy, levels and more." />
+  <meta name="theme-color" content="#0c0d0d" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
   <link rel="icon" href="assets/svg/logo.png" type="image/svg+xml" />
 </head>
@@ -19,7 +20,6 @@
     <div class="grid-overlay"></div>
   </div>
 
-  <!-- NAV -->
   <header class="nav" id="nav">
     <div class="container nav-inner">
       <a href="/" class="brand" aria-label="xrypton home">
@@ -45,14 +45,14 @@
     <section class="subhero">
       <div class="container">
         <h1>Commands</h1>
-        <p>Everything xrypton can do, organized by module. The default prefix is <code style="color:var(--accent)">,</code> — but every command also works as a slash command.</p>
+        <p>Everything xrypton can do, organized by module. The default prefix is <span style="color:var(--accent)">,</span> — but every command also works as a slash command.</p>
 
         <div class="notice">
-          Tip: command names shown include the prefix (e.g. <code>,voicemaster setup</code>). Replace them with <code>/voicemaster setup</code> in-app.
+          Tip: command names shown include the prefix (e.g. <span style="font-family:'JetBrains Mono',ui-monospace,monospace;color:var(--accent)">,voicemaster setup</span>). Replace them with <span style="font-family:'JetBrains Mono',ui-monospace,monospace;color:var(--accent)">/voicemaster setup</span> in-app.
         </div>
 
         <div class="search">
-          <input id="cmdSearch" type="text" placeholder="Search commands… (e.g. lock, economy, snipe)" autocomplete="off" />
+          <input id="cmdSearch" type="text" placeholder="Search commands... (e.g. lock, economy, snipe)" autocomplete="off" />
         </div>
 
         <div id="cmdMount"></div>
@@ -92,11 +92,9 @@
       </div>
     </div>
     <div class="container footer-bottom">
-      <span>Copyright © 2026 xrypton.bot, All rights reserved.</span>
+      <span>Copyright &copy; 2026 xrypton.bot, All rights reserved.</span>
     </div>
   </footer>
-
-  <script src="assets/js/main.js"></script>
 
   <div id="cmdModal" class="modal-overlay" style="display:none">
     <div class="modal" role="dialog" aria-modal="true">
@@ -113,5 +111,7 @@
       </div>
     </div>
   </div>
+
+  <script src="assets/js/main.js"></script>
 </body>
 </html>
