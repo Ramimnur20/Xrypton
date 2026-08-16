@@ -299,3 +299,64 @@ class EditorLabelModal(Modal, title="Button Role — Label & Emoji"):
             ),
             ephemeral=True,
         )
+
+
+class EditorStyleSelectView(View):
+    def __init__(self, editor_view: "EditorView"):
+        super().__init__(timeout=60)
+        self.editor_view = editor_view
+
+        options = [
+            discord.SelectOption(label="Primary (Blurple)", value="primary", emoji="🔵", description="Discord blurple accent"),
+            discord.SelectOption(label="Secondary (Grey)", value="secondary", emoji="⚪", description="Neutral grey tone"),
+            discord.SelectOption(label="Success (Green)", value="success", emoji="🟢", description="Positive green action"),
+            discord.SelectOption(label="Danger (Red)", value="danger", emoji="🔴", description="Warning/destructive red"),
+        ]
+        self.select = Select(
+            placeholder="Choose button style...",
+            options=options,
+            custom_id="editor:style_select",
+        )
+        self.select.callback = self.on_select
+        self.add_item(self.select)
+
+    async def on_select(self, interaction: discord.Interaction):
+        chosen_style = self.select.values[0]
+        self.editor_view.state["style"] = chosen_style
+        await self.editor_view.update_message()
+        await interaction.response.edit_message(
+            content=f"✅ Selected style: **{chosen_style}**",
+            view=None,
+        )
+
+
+class EditorRoleSelectView(View):
+    def __init__(self, editor_view: "EditorView"):
+        super().__init__(timeout=60)
+        self.editor_view = editor_view
+
+        self.role_select = RoleSelect(
+            placeholder="Select a role to assign...",
+            min_values=1,
+            max_values=1,
+            custom_id="editor:role_select",
+        )
+        self.role_select.callback = self.on_select
+        self.add_item(self.role_select)
+
+    async def on_select(self, interaction: discord.Interaction):
+        role = self.role_select.values[0]
+        err = self.editor_view.cog.validate_role(self.editor_view.ctx.guild, role)
+        if err:
+            await interaction.response.edit_message(
+                content=f"❌ Cannot use {role.mention}: {err}",
+                view=None,
+            )
+            return
+
+        self.editor_view.state["role"] = role
+        await self.editor_view.update_message()
+        await interaction.response.edit_message(
+            content=f"✅ Selected role: {role.mention}",
+            view=None,
+        )
