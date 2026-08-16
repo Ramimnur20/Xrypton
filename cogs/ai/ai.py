@@ -111,15 +111,6 @@ class AI(CogMeta):
 
         await ctx.send(embed=embed)
         
-    @example(",clear")
-    @ai_group.command(
-        name="clear",
-        aliases=["reset"],
-        description="Clear the AI conversation history.",
-    )
-    async def ai_clear(self, ctx: Context):
-        self.conv.clear()
-        await ctx.approve("Conversation history cleared.")
     @example(",imagine a sunset over the ocean")
     @command(
         name="imagine",
