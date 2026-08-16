@@ -360,3 +360,200 @@ class EditorRoleSelectView(View):
             content=f"✅ Selected role: {role.mention}",
             view=None,
         )
+
+
+class EditorView(View):
+    def __init__(self, cog: "ButtonRole", ctx: Context):
+        super().__init__(timeout=600)
+        self.cog = cog
+        self.ctx = ctx
+        self.message: Optional[Message] = None
+        self.state: Dict[str, Any] = {
+            "message": None,
+            "channel": None,
+            "style": None,
+            "label": None,
+            "role": None,
+            "emoji": None,
+        }
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(
+                embed=Embed(
+                    description=f"{EMOJIS.DENY} {interaction.user.mention}: This editor session belongs to {self.ctx.author.mention}.",
+                    color=COLORS.deny,
+                ),
+                ephemeral=True,
+            )
+            return False
+        return True
+
+    def build_embed(self) -> Embed:
+        msg = self.state["message"]
+        style = self.state["style"]
+        label = self.state["label"]
+        role = self.state["role"]
+        emoji = self.state["emoji"]
+
+        msg_str = f"✅ [Jump to Message]({msg.jump_url})" if msg else "⬜ *Not set*"
+        style_str = f"✅ **{style.capitalize()}**" if style else "⬜ *Not set*"
+        label_str = f"✅ **{label}**" if label else "⬜ *Not set*"
+        role_str = f"✅ {role.mention}" if role else "⬜ *Not set*"
+        emoji_str = f"✅ {emoji}" if emoji else "⬜ *None (optional)*"
+
+        embed = Embed(
+            title="Button Role — Interactive Editor",
+            description=(
+                "Use the buttons below to configure your button role. "
+                "Once all required fields are set, click **Done** to attach the button to your message.\n\n"
+                f"**Target Message:** {msg_str}\n"
+                f"**Button Style:** {style_str}\n"
+                f"**Button Label:** {label_str}\n"
+                f"**Role Assignment:** {role_str}\n"
+                f"**Emoji Icon:** {emoji_str}"
+            ),
+            color=COLORS.neutral,
+        )
+        embed.set_footer(text="Interactive Editor • Times out after 10 minutes of inactivity")
+        return embed
+
+    async def update_message(self):
+        if self.message:
+            try:
+                await self.message.edit(embed=self.build_embed(), view=self)
+            except (discord.NotFound, discord.HTTPException):
+                pass
+
+    @discord.ui.button(label="Message Link or ID", style=ButtonStyle.primary, row=0, custom_id="editor:msg_btn")
+    async def set_message(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.send_modal(EditorMessageModal(self))
+
+    @discord.ui.button(label="Style", style=ButtonStyle.primary, row=0, custom_id="editor:style_btn")
+    async def set_style(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.send_message(
+            "Select the button style (color):",
+            view=EditorStyleSelectView(self),
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="Label", style=ButtonStyle.primary, row=0, custom_id="editor:label_btn")
+    async def set_label(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.send_modal(EditorLabelModal(self))
+
+    @discord.ui.button(label="Role Assignment", style=ButtonStyle.primary, row=1, custom_id="editor:role_btn")
+    async def set_role(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.send_message(
+            "Select the role to assign/remove on click:",
+            view=EditorRoleSelectView(self),
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="Done", style=ButtonStyle.success, row=1, custom_id="editor:done_btn")
+    async def finish(self, interaction: discord.Interaction, button: Button):
+        missing = []
+        if not self.state["message"]:
+            missing.append("Target Message")
+        if not self.state["style"]:
+            missing.append("Button Style")
+        if not self.state["label"]:
+            missing.append("Button Label")
+        if not self.state["role"]:
+            missing.append("Role Assignment")
+
+        if missing:
+            await interaction.response.send_message(
+                embed=Embed(
+                    description=f"{EMOJIS.DENY} {interaction.user.mention}: Please complete all required fields before finishing:\n" + "\n".join(f"• **{m}**" for m in missing),
+                    color=COLORS.deny,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        success, err = await self.cog.create_button_role(
+            guild=self.ctx.guild,
+            channel=self.state["channel"],
+            message=self.state["message"],
+            role=self.state["role"],
+            style_str=self.state["style"],
+            label=self.state["label"],
+            emoji_str=self.state["emoji"],
+            author_id=self.ctx.author.id,
+        )
+
+        if not success:
+            await interaction.response.send_message(
+                embed=Embed(
+                    description=f"{EMOJIS.DENY} {interaction.user.mention}: {err}",
+                    color=COLORS.deny,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        for child in self.children:
+            child.disabled = True
+
+        success_embed = Embed(
+            title="Button Role Created",
+            description=(
+                f"{EMOJIS.APPROVE} Successfully created button role!\n\n"
+                f"• **Button:** {self.state['label']}\n"
+                f"• **Role:** {self.state['role'].mention}\n"
+                f"• **Style:** `{self.state['style']}`\n"
+                f"• **Target:** [Jump to Message]({self.state['message'].jump_url})"
+            ),
+            color=COLORS.approve,
+        )
+        await interaction.response.edit_message(embed=success_embed, view=None)
+        self.stop()
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        if self.message:
+            try:
+                timeout_embed = Embed(
+                    description=f"{EMOJIS.WARN} Editor session expired. Run `,buttonrole editor` to start a new session.",
+                    color=COLORS.warn,
+                )
+                await self.message.edit(embed=timeout_embed, view=None)
+            except (discord.NotFound, discord.HTTPException):
+                pass
+
+
+class HomeView(View):
+    def __init__(self, cog: "ButtonRole", ctx: Context):
+        super().__init__(timeout=180)
+        self.cog = cog
+        self.ctx = ctx
+        self.message: Optional[Message] = None
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(
+                embed=Embed(
+                    description=f"{EMOJIS.DENY} {interaction.user.mention}: You cannot interact with this menu.",
+                    color=COLORS.deny,
+                ),
+                ephemeral=True,
+            )
+            return False
+        return True
+
+    @discord.ui.button(label="Create New", style=ButtonStyle.success, emoji="➕", custom_id="home:create_new")
+    async def create_new(self, interaction: discord.Interaction, button: Button):
+        editor = EditorView(self.cog, self.ctx)
+        embed = editor.build_embed()
+        await interaction.response.send_message(embed=embed, view=editor)
+        editor.message = await interaction.original_response()
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except (discord.NotFound, discord.HTTPException):
+                pass
