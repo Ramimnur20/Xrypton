@@ -913,3 +913,245 @@ class ButtonRole(CogMeta):
         except Exception as e:
             logger.error(f"ButtonRole | Failed to re-render message {message_id}: {e}")
             return False
+
+
+    @example(",buttonrole")
+    @group(name="buttonrole", aliases=["br"], invoke_without_command=True)
+    @has_permissions(manage_roles=True)
+    async def buttonrole(self, ctx: Context):
+        """Manage self-assignable button roles on bot messages."""
+        embed = Embed(
+            title="🔘 Button Role Management",
+            description=(
+                "Attach persistent, interactive role assignment buttons to any message sent by the bot.\n\n"
+                "**Commands:**\n"
+                "`•` `,buttonrole editor` — Launch the interactive setup editor\n"
+                "`•` `,buttonrole add <message> <role> <style> <label> [emoji]` — Add a button role\n"
+                "`•` `,buttonrole remove <message>` — Remove a button role from a message\n"
+                "`•` `,buttonrole list` — List all active button roles in the server\n"
+                "`•` `,buttonrole edit label <message> <new label>` — Change a button's label\n"
+                "`•` `,buttonrole edit role <message> <new role>` — Change a button's assigned role\n"
+                "`•` `,buttonrole edit style <message> <new style>` — Change a button's color/style\n"
+                "`•` `,buttonrole edit emoji <message> <new emoji>` — Change or remove a button's emoji\n\n"
+                "**Styles:** `primary` (blurple), `secondary` (grey), `success` (green), `danger` (red)\n"
+                "Click **Create New** below to start configuring a button role with the interactive wizard."
+            ),
+            color=COLORS.neutral,
+        )
+        embed.set_footer(text="Xrypton Button Roles • Buttons persist across bot restarts")
+        view = HomeView(self, ctx)
+        msg = await ctx.send(embed=embed, view=view)
+        view.message = msg
+
+    @example(",buttonrole editor")
+    @buttonrole.command(name="editor")
+    @has_permissions(manage_roles=True)
+    async def br_editor(self, ctx: Context):
+        """Launch the interactive button role setup editor."""
+        editor = EditorView(self, ctx)
+        embed = editor.build_embed()
+        msg = await ctx.send(embed=embed, view=editor)
+        editor.message = msg
+
+    @example(",buttonrole add https://discord.com/channels/... @Member success Verify 🛡️")
+    @buttonrole.command(name="add")
+    @has_permissions(manage_roles=True)
+    async def br_add(
+        self,
+        ctx: Context,
+        message_link: Optional[str] = None,
+        role_input: Optional[str] = None,
+        style: Optional[str] = None,
+        label: Optional[str] = None,
+        *,
+        emoji: Optional[str] = None,
+    ):
+        """Add a new button role to an existing bot message."""
+        if not message_link:
+            return await ctx.deny(
+                "Missing required argument: `message_link`.\n"
+                "**Usage:** `,buttonrole add <message_link> <role> <style> <label> [emoji]`\n"
+                "**Example:** `,buttonrole add https://discord.com/channels/... @Gamer primary Gamers 🎮`"
+            )
+        if not role_input:
+            return await ctx.deny(
+                "Missing required argument: `role`.\n"
+                "**Usage:** `,buttonrole add <message_link> <role> <style> <label> [emoji]`\n"
+                "**Example:** `,buttonrole add https://discord.com/channels/... @Gamer primary Gamers 🎮`"
+            )
+        if not style:
+            return await ctx.deny(
+                "Missing required argument: `style` (one of: `danger`, `success`, `primary`, `secondary`).\n"
+                "**Usage:** `,buttonrole add <message_link> <role> <style> <label> [emoji]`"
+            )
+        if not label:
+            return await ctx.deny(
+                "Missing required argument: `label`.\n"
+                "**Usage:** `,buttonrole add <message_link> <role> <style> <label> [emoji]`\n"
+                "**Example:** `,buttonrole add https://discord.com/channels/... @Gamer primary Gamers 🎮`"
+            )
+
+        target_message, err = await self.resolve_message(ctx.guild, ctx.channel, message_link)
+        if err or not target_message:
+            return await ctx.deny(err or "Could not find the specified message.")
+
+        target_role = await self.resolve_role(ctx.guild, role_input)
+        if not target_role:
+            return await ctx.deny(f"Could not find any role matching `{role_input}`.")
+
+        success, err = await self.create_button_role(
+            guild=ctx.guild,
+            channel=target_message.channel,
+            message=target_message,
+            role=target_role,
+            style_str=style,
+            label=label,
+            emoji_str=emoji,
+            author_id=ctx.author.id,
+        )
+
+        if not success:
+            return await ctx.deny(err)
+
+        emoji_display = f" `{emoji}`" if emoji else ""
+        return await ctx.approve(
+            f"Successfully added button **{label}**{emoji_display} assigning {target_role.mention} "
+            f"to [the message]({target_message.jump_url})."
+        )
+
+    @example(",buttonrole remove https://discord.com/channels/...")
+    @buttonrole.command(name="remove")
+    @has_permissions(manage_roles=True)
+    async def br_remove(self, ctx: Context, message_link: Optional[str] = None):
+        """Remove a button role from a message."""
+        if not message_link:
+            return await ctx.deny(
+                "Missing required argument: `message_link`.\n"
+                "**Usage:** `,buttonrole remove <message_link>`"
+            )
+
+        target_message, err = await self.resolve_message(ctx.guild, ctx.channel, message_link)
+        if err or not target_message:
+            return await ctx.deny(err or "Could not find the specified message.")
+
+        rows = await self.bot.pool.fetch(
+            "SELECT * FROM button_roles WHERE message_id = $1 ORDER BY id ASC",
+            target_message.id,
+        )
+        if not rows:
+            return await ctx.warn("That message does not have any button roles attached to it.")
+
+        # If exactly one button role on this message, remove it directly
+        if len(rows) == 1:
+            row_to_remove = rows[0]
+            role = ctx.guild.get_role(row_to_remove["role_id"])
+            role_str = role.mention if role else f"Role ID `{row_to_remove['role_id']}`"
+
+            await self.bot.pool.execute("DELETE FROM button_roles WHERE id = $1", row_to_remove["id"])
+            await self.rerender_message(ctx.guild.id, target_message.channel.id, target_message.id)
+
+            return await ctx.approve(
+                f"Removed button **{row_to_remove['label']}** ({role_str}) from [the message]({target_message.jump_url})."
+            )
+
+        # If multiple buttons, present disambiguation select menu
+        view = ButtonDisambiguationView(ctx, rows, "remove")
+        prompt_msg = await ctx.send(
+            embed=Embed(
+                title="Select Button to Remove",
+                description=f"This message has **{len(rows)}** button roles. Choose which one to remove:",
+                color=COLORS.neutral,
+            ),
+            view=view,
+        )
+
+        await view.wait()
+
+        if not view.selected_row:
+            try:
+                await prompt_msg.edit(
+                    embed=Embed(
+                        description=f"{EMOJIS.WARN} Removal cancelled or timed out.",
+                        color=COLORS.warn,
+                    ),
+                    view=None,
+                )
+            except Exception:
+                pass
+            return
+
+        chosen = view.selected_row
+        role = ctx.guild.get_role(chosen["role_id"])
+        role_str = role.mention if role else f"Role ID `{chosen['role_id']}`"
+
+        await self.bot.pool.execute("DELETE FROM button_roles WHERE id = $1", chosen["id"])
+        await self.rerender_message(ctx.guild.id, target_message.channel.id, target_message.id)
+
+        try:
+            await prompt_msg.edit(
+                embed=Embed(
+                    description=f"{EMOJIS.APPROVE} Removed button **{chosen['label']}** ({role_str}) from [the message]({target_message.jump_url}).",
+                    color=COLORS.approve,
+                ),
+                view=None,
+            )
+        except Exception:
+            await ctx.approve(
+                f"Removed button **{chosen['label']}** ({role_str}) from [the message]({target_message.jump_url})."
+            )
+
+    @example(",buttonrole list")
+    @buttonrole.command(name="list")
+    @has_permissions(manage_roles=True)
+    async def br_list(self, ctx: Context):
+        """List all configured button roles in the server."""
+        rows = await self.bot.pool.fetch(
+            "SELECT * FROM button_roles WHERE guild_id = $1 ORDER BY channel_id, message_id, id ASC",
+            ctx.guild.id,
+        )
+        if not rows:
+            return await ctx.warn("There are no button roles configured in this server.")
+
+        # Group by message_id
+        grouped: Dict[int, List[dict]] = {}
+        for row in rows:
+            grouped.setdefault(row["message_id"], []).append(row)
+
+        entries = []
+        for msg_id, btn_rows in grouped.items():
+            first = btn_rows[0]
+            channel = ctx.guild.get_channel(first["channel_id"])
+            channel_str = channel.mention if channel else f"`#{first['channel_id']}`"
+            jump_link = f"https://discord.com/channels/{ctx.guild.id}/{first['channel_id']}/{msg_id}"
+
+            btn_lines = []
+            for btn in btn_rows:
+                role = ctx.guild.get_role(btn["role_id"])
+                role_str = role.mention if role else f"Deleted Role (`{btn['role_id']}`)"
+                emoji_str = f" {btn['emoji']}" if btn.get("emoji") else ""
+                created_ts = int(btn["created_at"].timestamp()) if isinstance(btn["created_at"], datetime) else "N/A"
+                time_str = f"<t:{created_ts}:R>" if created_ts != "N/A" else "N/A"
+
+                btn_lines.append(
+                    f"  `•` **{btn['label']}**{emoji_str} ➔ {role_str} (`{btn['style']}`) • {time_str}"
+                )
+
+            entry_text = f"**[Message in {channel_str}]({jump_link})** (`{len(btn_rows)} buttons`)\n" + "\n".join(btn_lines)
+            entries.append(entry_text)
+
+        # Build pages (3 messages per page to keep embeds clean)
+        per_page = 3
+        embeds = []
+        total_pages = (len(entries) + per_page - 1) // per_page
+
+        for page_idx in range(total_pages):
+            chunk = entries[page_idx * per_page : page_idx * per_page + per_page]
+            embed = Embed(
+                title=f"🔘 Button Roles — {ctx.guild.name}",
+                description=f"Total: **{len(rows)}** buttons across **{len(grouped)}** messages.\n\n" + "\n\n".join(chunk),
+                color=COLORS.neutral,
+            )
+            embed.set_footer(text=f"Page {page_idx + 1}/{total_pages} • {len(rows)} total buttons")
+            embeds.append(embed)
+
+        await ctx.paginate(embeds)
