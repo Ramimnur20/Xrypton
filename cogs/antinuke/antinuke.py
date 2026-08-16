@@ -180,6 +180,19 @@ class AntiNuke(CogMeta):
                     await self.bot.pool.execute(f"ALTER TABLE {table} ADD COLUMN {column}")
                 except Exception:
                     pass
+        # The live database may predate newer columns; add any that are missing.
+        # `except` swallows the harmless "duplicate column" error when present.
+        for table, column in (
+            ("antinuke_modules", "enabled INTEGER DEFAULT 1"),
+            ("antinuke_modules", "punishment TEXT DEFAULT 'ban'"),
+            ("antinuke", "enabled INTEGER DEFAULT 0"),
+            ("antinuke", "disabled_at TIMESTAMP"),
+            ("antinuke", "log_channel_id INTEGER"),
+        ):
+            try:
+                await self.bot.pool.execute(f"ALTER TABLE {table} ADD COLUMN {column}")
+            except Exception:
+                pass
 
     def embed(self, title: str, description: str, color: Optional[discord.Color] = None) -> discord.Embed:
         embed = discord.Embed(title=title, description=description, color=color or discord.Color.blurple())

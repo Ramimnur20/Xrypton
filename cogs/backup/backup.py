@@ -851,10 +851,20 @@ class Backup(CogMeta):
                 if await maybe_cancel():
                     return
 
-            # Apply role positions in one call (clamped by Discord hierarchy).
+            # Apply role positions. Discord forbids moving a role above the bot's
+            # own top role (even with Administrator), so only reorder positions that
+            # sit strictly below the bot's highest role — the rest keep their natural
+            # (correct relative) stacking from the descending create order.
             if role_map:
                 try:
-                    await guild.edit_role_positions({role_map[idx]: pos for idx, pos in pos_map.items()})
+                    bot_top = max((role.position for role in guild.me.roles), default=0)
+                    order_map = {
+                        role_map[idx]: pos
+                        for idx, pos in pos_map.items()
+                        if pos < bot_top
+                    }
+                    if order_map:
+                        await guild.edit_role_positions(order_map)
                 except Exception as error:
                     failures.append(f"reorder roles: {error}")
 
@@ -891,9 +901,20 @@ class Backup(CogMeta):
                             slowmode_delay=ch["slowmode_delay"] or 0, **base,
                         )
                     elif ctype == "announcement":
-                        new = await guild.create_text_channel(
-                            news=True, topic=ch["topic"], nsfw=_b(ch["nsfw"]), **base,
-                        )
+                        # Discord only allows announcement (news) channels on Community
+                        # servers; outside one the API rejects type 5. Fall back to a
+                        # normal text channel so the restore still succeeds.
+                        try:
+                            new = await guild.create_text_channel(
+                                news=True, topic=ch["topic"], nsfw=_b(ch["nsfw"]), **base,
+                            )
+                        except discord.HTTPException:
+                            new = await guild.create_text_channel(
+                                topic=ch["topic"], nsfw=_b(ch["nsfw"]), **base,
+                            )
+                            failures.append(
+                                f"channel {ch['name']}: restored as text (announcements require a Community server)"
+                            )
                     elif ctype == "voice":
                         new = await guild.create_voice_channel(
                             bitrate=ch["bitrate"] or 64000, user_limit=ch["user_limit"] or 0, **base,
