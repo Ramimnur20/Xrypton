@@ -1155,3 +1155,286 @@ class ButtonRole(CogMeta):
             embeds.append(embed)
 
         await ctx.paginate(embeds)
+
+
+    @buttonrole.group(name="edit", invoke_without_command=True)
+    @has_permissions(manage_roles=True)
+    async def br_edit(self, ctx: Context):
+        """Edit an existing button role's properties."""
+        embed = Embed(
+            title="🔘 Edit Button Role",
+            description=(
+                "Modify properties of existing button roles.\n\n"
+                "`•` `,buttonrole edit label <message> <new label>` — Change button text\n"
+                "`•` `,buttonrole edit role <message> <new role>` — Change assigned role\n"
+                "`•` `,buttonrole edit style <message> <new style>` — Change button color/style\n"
+                "`•` `,buttonrole edit emoji <message> <new emoji>` — Change or remove button icon\n\n"
+                "If the target message has multiple buttons, you will be prompted to choose which button to edit."
+            ),
+            color=COLORS.neutral,
+        )
+        return await ctx.send(embed=embed)
+
+    async def _disambiguate_edit_target(
+        self,
+        ctx: Context,
+        message: Message,
+        rows: List[dict],
+        property_name: str,
+    ) -> Optional[dict]:
+        """Helper to pick target row when multiple buttons are present on a message."""
+        if len(rows) == 1:
+            return rows[0]
+
+        view = ButtonDisambiguationView(ctx, rows, f"edit {property_name}")
+        prompt_msg = await ctx.send(
+            embed=Embed(
+                title=f"Select Button to Edit {property_name.capitalize()}",
+                description=f"This message has **{len(rows)}** buttons. Select the button you wish to edit:",
+                color=COLORS.neutral,
+            ),
+            view=view,
+        )
+
+        await view.wait()
+
+        if not view.selected_row:
+            try:
+                await prompt_msg.edit(
+                    embed=Embed(
+                        description=f"{EMOJIS.WARN} Edit operation cancelled or timed out.",
+                        color=COLORS.warn,
+                    ),
+                    view=None,
+                )
+            except Exception:
+                pass
+            return None
+
+        try:
+            await prompt_msg.delete()
+        except Exception:
+            pass
+
+        return view.selected_row
+
+    @example(",buttonrole edit label https://discord.com/channels/... New Label")
+    @br_edit.command(name="label")
+    @has_permissions(manage_roles=True)
+    async def br_edit_label(
+        self,
+        ctx: Context,
+        message_link: Optional[str] = None,
+        *,
+        label: Optional[str] = None,
+    ):
+        """Change the label text of a button role."""
+        if not message_link:
+            return await ctx.deny(
+                "Missing required argument: `message_link`.\n"
+                "**Usage:** `,buttonrole edit label <message_link> <new_label>`"
+            )
+        if not label:
+            return await ctx.deny(
+                "Missing required argument: `label`.\n"
+                "**Usage:** `,buttonrole edit label <message_link> <new_label>`"
+            )
+
+        if len(label) > 80:
+            return await ctx.deny("Button label cannot exceed 80 characters.")
+
+        target_message, err = await self.resolve_message(ctx.guild, ctx.channel, message_link)
+        if err or not target_message:
+            return await ctx.deny(err or "Could not find the specified message.")
+
+        rows = await self.bot.pool.fetch(
+            "SELECT * FROM button_roles WHERE message_id = $1 ORDER BY id ASC",
+            target_message.id,
+        )
+        if not rows:
+            return await ctx.warn("That message does not have any button roles attached.")
+
+        target_row = await self._disambiguate_edit_target(ctx, target_message, rows, "label")
+        if not target_row:
+            return
+
+        old_label = target_row["label"]
+        await self.bot.pool.execute(
+            "UPDATE button_roles SET label = $1 WHERE id = $2",
+            label,
+            target_row["id"],
+        )
+        await self.rerender_message(ctx.guild.id, target_message.channel.id, target_message.id)
+
+        return await ctx.approve(
+            f"Updated button label from **{old_label}** to **{label}** on [the message]({target_message.jump_url})."
+        )
+
+    @example(",buttonrole edit role https://discord.com/channels/... @NewRole")
+    @br_edit.command(name="role")
+    @has_permissions(manage_roles=True)
+    async def br_edit_role(
+        self,
+        ctx: Context,
+        message_link: Optional[str] = None,
+        *,
+        role_input: Optional[str] = None,
+    ):
+        """Change the assigned role of a button role."""
+        if not message_link:
+            return await ctx.deny(
+                "Missing required argument: `message_link`.\n"
+                "**Usage:** `,buttonrole edit role <message_link> <new_role>`"
+            )
+        if not role_input:
+            return await ctx.deny(
+                "Missing required argument: `new_role`.\n"
+                "**Usage:** `,buttonrole edit role <message_link> <new_role>`"
+            )
+
+        target_message, err = await self.resolve_message(ctx.guild, ctx.channel, message_link)
+        if err or not target_message:
+            return await ctx.deny(err or "Could not find the specified message.")
+
+        target_role = await self.resolve_role(ctx.guild, role_input)
+        if not target_role:
+            return await ctx.deny(f"Could not find any role matching `{role_input}`.")
+
+        role_err = self.validate_role(ctx.guild, target_role)
+        if role_err:
+            return await ctx.deny(role_err)
+
+        rows = await self.bot.pool.fetch(
+            "SELECT * FROM button_roles WHERE message_id = $1 ORDER BY id ASC",
+            target_message.id,
+        )
+        if not rows:
+            return await ctx.warn("That message does not have any button roles attached.")
+
+        target_row = await self._disambiguate_edit_target(ctx, target_message, rows, "role")
+        if not target_row:
+            return
+
+        await self.bot.pool.execute(
+            "UPDATE button_roles SET role_id = $1 WHERE id = $2",
+            target_role.id,
+            target_row["id"],
+        )
+        await self.rerender_message(ctx.guild.id, target_message.channel.id, target_message.id)
+
+        return await ctx.approve(
+            f"Updated button **{target_row['label']}** assigned role to {target_role.mention} on [the message]({target_message.jump_url})."
+        )
+
+    @example(",buttonrole edit style https://discord.com/channels/... success")
+    @br_edit.command(name="style")
+    @has_permissions(manage_roles=True)
+    async def br_edit_style(
+        self,
+        ctx: Context,
+        message_link: Optional[str] = None,
+        style: Optional[str] = None,
+    ):
+        """Change the color/style of a button role."""
+        if not message_link:
+            return await ctx.deny(
+                "Missing required argument: `message_link`.\n"
+                "**Usage:** `,buttonrole edit style <message_link> <new_style>`"
+            )
+        if not style:
+            return await ctx.deny(
+                "Missing required argument: `style` (one of: `danger`, `success`, `primary`, `secondary`).\n"
+                "**Usage:** `,buttonrole edit style <message_link> <new_style>`"
+            )
+
+        norm_style = normalize_style(style)
+        if not norm_style:
+            return await ctx.deny(
+                f"Invalid style `{style}`. Valid styles are: `danger` (red), `success` (green), `primary` (blurple), `secondary` (grey)."
+            )
+
+        target_message, err = await self.resolve_message(ctx.guild, ctx.channel, message_link)
+        if err or not target_message:
+            return await ctx.deny(err or "Could not find the specified message.")
+
+        rows = await self.bot.pool.fetch(
+            "SELECT * FROM button_roles WHERE message_id = $1 ORDER BY id ASC",
+            target_message.id,
+        )
+        if not rows:
+            return await ctx.warn("That message does not have any button roles attached.")
+
+        target_row = await self._disambiguate_edit_target(ctx, target_message, rows, "style")
+        if not target_row:
+            return
+
+        await self.bot.pool.execute(
+            "UPDATE button_roles SET style = $1 WHERE id = $2",
+            norm_style,
+            target_row["id"],
+        )
+        await self.rerender_message(ctx.guild.id, target_message.channel.id, target_message.id)
+
+        return await ctx.approve(
+            f"Updated style for button **{target_row['label']}** to `{norm_style}` on [the message]({target_message.jump_url})."
+        )
+
+    @example(",buttonrole edit emoji https://discord.com/channels/... 🛡️")
+    @br_edit.command(name="emoji")
+    @has_permissions(manage_roles=True)
+    async def br_edit_emoji(
+        self,
+        ctx: Context,
+        message_link: Optional[str] = None,
+        *,
+        emoji: Optional[str] = None,
+    ):
+        """Change or remove the emoji of a button role (use 'none' to remove)."""
+        if not message_link:
+            return await ctx.deny(
+                "Missing required argument: `message_link`.\n"
+                "**Usage:** `,buttonrole edit emoji <message_link> <emoji|none>`"
+            )
+        if not emoji:
+            return await ctx.deny(
+                "Missing required argument: `emoji`.\n"
+                "**Usage:** `,buttonrole edit emoji <message_link> <emoji|none>`\n"
+                "Pass `none` or `clear` to remove the emoji icon."
+            )
+
+        target_message, err = await self.resolve_message(ctx.guild, ctx.channel, message_link)
+        if err or not target_message:
+            return await ctx.deny(err or "Could not find the specified message.")
+
+        rows = await self.bot.pool.fetch(
+            "SELECT * FROM button_roles WHERE message_id = $1 ORDER BY id ASC",
+            target_message.id,
+        )
+        if not rows:
+            return await ctx.warn("That message does not have any button roles attached.")
+
+        target_row = await self._disambiguate_edit_target(ctx, target_message, rows, "emoji")
+        if not target_row:
+            return
+
+        cleaned_emoji = serialize_emoji_input(emoji)
+
+        await self.bot.pool.execute(
+            "UPDATE button_roles SET emoji = $1 WHERE id = $2",
+            cleaned_emoji,
+            target_row["id"],
+        )
+        await self.rerender_message(ctx.guild.id, target_message.channel.id, target_message.id)
+
+        if cleaned_emoji:
+            return await ctx.approve(
+                f"Updated emoji for button **{target_row['label']}** to {cleaned_emoji} on [the message]({target_message.jump_url})."
+            )
+        else:
+            return await ctx.approve(
+                f"Removed emoji from button **{target_row['label']}** on [the message]({target_message.jump_url})."
+            )
+
+
+async def setup(bot) -> None:
+    await bot.add_cog(ButtonRole(bot))
