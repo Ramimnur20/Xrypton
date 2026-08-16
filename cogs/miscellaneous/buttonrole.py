@@ -557,3 +557,161 @@ class HomeView(View):
                 await self.message.edit(view=self)
             except (discord.NotFound, discord.HTTPException):
                 pass
+
+
+class ButtonRole(CogMeta):
+    """Button Role system allowing staff to attach persistent role-assignment buttons to messages."""
+
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.bot = bot
+        self._cooldowns: Dict[Tuple[int, int], float] = {}
+
+    async def cog_load(self):
+        await self.ensure_schema()
+        await self._register_persistent_views()
+
+    async def ensure_schema(self):
+        query = """
+        CREATE TABLE IF NOT EXISTS button_roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL,
+            channel_id INTEGER NOT NULL,
+            message_id INTEGER NOT NULL,
+            role_id INTEGER NOT NULL,
+            label TEXT NOT NULL,
+            style TEXT NOT NULL,
+            emoji TEXT,
+            custom_id TEXT NOT NULL UNIQUE,
+            created_by INTEGER NOT NULL,
+            created_at TIMESTAMP NOT NULL
+        );
+        """
+        await self.bot.pool.execute(query)
+
+    async def _register_persistent_views(self):
+        """Query every distinct message with button roles on startup and register persistent views."""
+        rows = await self.bot.pool.fetch(
+            "SELECT DISTINCT guild_id, channel_id, message_id FROM button_roles"
+        )
+        count = 0
+        for row in rows:
+            view = await self.build_view_for_message(row["message_id"])
+            if view and len(view.children) > 0:
+                self.bot.add_view(view)
+                count += 1
+        logger.info(f"ButtonRole | Registered {count} persistent views on startup.")
+
+    async def build_view_for_message(self, message_id: int) -> Optional[View]:
+        """Shared helper to build a persistent discord.ui.View for a given message ID."""
+        rows = await self.bot.pool.fetch(
+            "SELECT * FROM button_roles WHERE message_id = $1 ORDER BY id ASC",
+            message_id,
+        )
+        if not rows:
+            return None
+
+        view = View(timeout=None)
+        for i, row in enumerate(rows[:25]):
+            row_idx = i // 5
+            view.add_item(ButtonRoleButton(self, row, row_idx=row_idx))
+        return view
+
+    async def handle_button_click(self, interaction: discord.Interaction, row: dict):
+        """Handle live button role clicks with toggle behavior, cooldowns, and error handling."""
+        if not interaction.guild or not isinstance(interaction.user, Member):
+            return
+
+        user: Member = interaction.user
+        guild = interaction.guild
+        button_id = row["id"]
+
+        # 1. Cooldown check (2.5 seconds per-user per-button)
+        cd_key = (user.id, button_id)
+        now = time.time()
+        last_clicked = self._cooldowns.get(cd_key, 0.0)
+        if now - last_clicked < 2.5:
+            await interaction.response.send_message(
+                embed=Embed(
+                    description=f"{EMOJIS.COOLDOWN} {user.mention}: You're clicking too fast! Please wait a moment.",
+                    color=COLORS.neutral,
+                ),
+                ephemeral=True,
+            )
+            return
+        self._cooldowns[cd_key] = now
+
+        # 2. Check if the underlying role still exists in the guild
+        role = guild.get_role(row["role_id"])
+        if not role:
+            logger.warning(
+                f"ButtonRole | Role ID {row['role_id']} deleted from guild {guild.id}. Deleting stale button role {button_id}."
+            )
+            await self.bot.pool.execute("DELETE FROM button_roles WHERE id = $1", button_id)
+            await interaction.response.send_message(
+                embed=Embed(
+                    description=f"{EMOJIS.DENY} {user.mention}: The role associated with this button no longer exists in this server.",
+                    color=COLORS.deny,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        # 3. Check bot permissions and hierarchy
+        if not guild.me.guild_permissions.manage_roles:
+            await interaction.response.send_message(
+                embed=Embed(
+                    description=f"{EMOJIS.DENY} {user.mention}: I am missing the **Manage Roles** permission to give you this role.",
+                    color=COLORS.deny,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        if role >= guild.me.top_role:
+            await interaction.response.send_message(
+                embed=Embed(
+                    description=f"{EMOJIS.DENY} {user.mention}: I cannot assign {role.mention} because it sits higher than or equal to my highest role.",
+                    color=COLORS.deny,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        # 4. Toggle behavior
+        try:
+            if role in user.roles:
+                await user.remove_roles(role, reason=f"Button Role: {row['label']} toggle")
+                await interaction.response.send_message(
+                    embed=Embed(
+                        description=f"{EMOJIS.APPROVE} {user.mention}: Removed the **{role.name}** role.",
+                        color=COLORS.approve,
+                    ),
+                    ephemeral=True,
+                )
+            else:
+                await user.add_roles(role, reason=f"Button Role: {row['label']} toggle")
+                await interaction.response.send_message(
+                    embed=Embed(
+                        description=f"{EMOJIS.APPROVE} {user.mention}: Gave you the **{role.name}** role.",
+                        color=COLORS.approve,
+                    ),
+                    ephemeral=True,
+                )
+        except discord.Forbidden:
+            await interaction.response.send_message(
+                embed=Embed(
+                    description=f"{EMOJIS.DENY} {user.mention}: I do not have permission to modify your roles.",
+                    color=COLORS.deny,
+                ),
+                ephemeral=True,
+            )
+        except discord.HTTPException as e:
+            logger.error(f"ButtonRole | Error toggling role {role.id} for user {user.id}: {e}")
+            await interaction.response.send_message(
+                embed=Embed(
+                    description=f"{EMOJIS.WARN} {user.mention}: An error occurred while updating your roles. Please try again later.",
+                    color=COLORS.warn,
+                ),
+                ephemeral=True,
+            )
