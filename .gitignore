@@ -2,6 +2,7 @@
 __pycache__
 base/config.py
 Xrypton.db
+backups.db
 .kilo
 
 website/

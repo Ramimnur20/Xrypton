@@ -269,12 +269,16 @@ CREATE TABLE IF NOT EXISTS antinuke (
 CREATE TABLE IF NOT EXISTS antinuke_admins (
     guild_id INTEGER,
     user_id INTEGER,
+    added_by INTEGER,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (guild_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS antinuke_whitelist (
     guild_id INTEGER,
     user_id INTEGER,
+    added_by INTEGER,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (guild_id, user_id)
 );
 
@@ -304,4 +308,20 @@ CREATE TABLE IF NOT EXISTS antinuke_guild_snapshots (
     icon TEXT,
     verification_level INTEGER,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS antinuke_incidents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id INTEGER,
+    module TEXT,
+    offender_id INTEGER,
+    target_id INTEGER,
+    punishment_applied TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reason TEXT
+);
+
+CREATE TABLE IF NOT EXISTS antinuke_quarantine (
+    guild_id INTEGER PRIMARY KEY,
+    role_id INTEGER
 );
