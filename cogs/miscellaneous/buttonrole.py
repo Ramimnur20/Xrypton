@@ -715,3 +715,201 @@ class ButtonRole(CogMeta):
                 ),
                 ephemeral=True,
             )
+
+
+    async def resolve_message(
+        self,
+        guild: discord.Guild,
+        current_channel: discord.abc.Messageable,
+        input_str: str,
+    ) -> Tuple[Optional[Message], Optional[str]]:
+        """Resolve a jump URL or raw message ID into a discord.Message."""
+        if not input_str:
+            return None, "No message link or ID provided."
+
+        input_str = input_str.strip()
+
+        # Match Discord jump URL format
+        match = re.match(
+            r"^https?://(?:canary\.|ptb\.)?discord(?:app)?\.com/channels/(\d+)/(\d+)/(\d+)$",
+            input_str,
+        )
+        if match:
+            g_id, c_id, m_id = map(int, match.groups())
+            if g_id != guild.id:
+                return None, "That message link belongs to a different server."
+
+            channel = guild.get_channel(c_id)
+            if not channel or not isinstance(channel, (TextChannel, discord.Thread, discord.VoiceChannel)):
+                try:
+                    channel = await self.bot.fetch_channel(c_id)
+                except Exception:
+                    return None, "Could not access the channel for that message link."
+
+            try:
+                msg = await channel.fetch_message(m_id)
+                return msg, None
+            except discord.NotFound:
+                return None, "Message not found in that channel."
+            except discord.Forbidden:
+                return None, "I do not have permission to read messages in that channel."
+            except Exception as e:
+                return None, f"Failed to fetch message: {e}"
+
+        # Match raw message ID (only resolves within the invoking channel)
+        if input_str.isdigit():
+            m_id = int(input_str)
+            if hasattr(current_channel, "fetch_message"):
+                try:
+                    msg = await current_channel.fetch_message(m_id)
+                    return msg, None
+                except discord.NotFound:
+                    return None, "Message not found in this channel. For messages in other channels, provide the full message link."
+                except discord.Forbidden:
+                    return None, "I do not have permission to view that message."
+                except Exception as e:
+                    return None, f"Failed to fetch message: {e}"
+            return None, "Cannot fetch messages in this channel type."
+
+        return None, "Invalid message format. Provide a full message jump URL or a message ID."
+
+    async def resolve_role(self, guild: discord.Guild, role_str: str) -> Optional[Role]:
+        """Resolve a role mention, ID, or name into a discord.Role."""
+        if not role_str:
+            return None
+
+        role_str = role_str.strip()
+
+        # Mention: <@&123456>
+        mention_match = re.match(r"^<@&(\d+)>$", role_str)
+        if mention_match:
+            return guild.get_role(int(mention_match.group(1)))
+
+        # Raw ID
+        if role_str.isdigit():
+            role = guild.get_role(int(role_str))
+            if role:
+                return role
+
+        # Name lookup (case-insensitive)
+        for r in guild.roles:
+            if r.name.lower() == role_str.lower():
+                return r
+
+        return None
+
+    def validate_role(self, guild: discord.Guild, role: Role) -> Optional[str]:
+        """Validate if a role can be used as a self-assignable button role."""
+        if role == guild.default_role:
+            return "You cannot use the `@everyone` role as a button role."
+        if role.managed:
+            return "That role is managed by an integration or bot and cannot be assigned."
+        if guild.me and role >= guild.me.top_role:
+            return "That role is higher than or equal to my highest role. Please move my role above it in the server role list."
+        return None
+
+    async def create_button_role(
+        self,
+        guild: discord.Guild,
+        channel: discord.abc.Messageable,
+        message: Message,
+        role: Role,
+        style_str: str,
+        label: str,
+        emoji_str: Optional[str],
+        author_id: int,
+    ) -> Tuple[bool, str]:
+        """Shared logic to validate and attach a new button role to a message."""
+        if message.author.id != self.bot.user.id:
+            return False, "Buttons can only be attached to messages sent by the bot."
+
+        norm_style = normalize_style(style_str)
+        if not norm_style:
+            return False, f"Invalid style `{style_str}`. Valid styles are: `danger`, `success`, `primary`, `secondary`."
+
+        role_err = self.validate_role(guild, role)
+        if role_err:
+            return False, role_err
+
+        if not label or len(label) > 80:
+            return False, "Label must be between 1 and 80 characters."
+
+        # Check Discord component limit (max 25 buttons per message)
+        count = await self.bot.pool.fetchval(
+            "SELECT COUNT(*) FROM button_roles WHERE message_id = $1", message.id
+        )
+        if count and count >= 25:
+            return False, "This message already has the maximum limit of 25 buttons (5 rows of 5)."
+
+        cleaned_emoji = serialize_emoji_input(emoji_str)
+        now = datetime.now(timezone.utc)
+
+        # Insert row and get auto-incremented ID
+        async with self.bot.pool.acquire() as conn:
+            cursor = await conn.db.execute(
+                """
+                INSERT INTO button_roles (
+                    guild_id, channel_id, message_id, role_id, label, style, emoji, custom_id, created_by, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    guild.id,
+                    channel.id,
+                    message.id,
+                    role.id,
+                    label,
+                    norm_style,
+                    cleaned_emoji,
+                    f"temp:{int(now.timestamp())}:{message.id}:{role.id}",
+                    author_id,
+                    now,
+                ),
+            )
+            row_id = cursor.lastrowid
+            custom_id = f"buttonrole:{row_id}"
+            await conn.db.execute(
+                "UPDATE button_roles SET custom_id = ? WHERE id = ?",
+                (custom_id, row_id),
+            )
+
+        # Rebuild view and edit target message
+        view = await self.build_view_for_message(message.id)
+        if view:
+            try:
+                await message.edit(view=view)
+                self.bot.add_view(view)
+            except discord.Forbidden:
+                return False, "I do not have permission to edit that message."
+            except discord.HTTPException as e:
+                return False, f"Failed to edit target message: {e}"
+
+        return True, "Button role successfully created."
+
+    async def rerender_message(self, guild_id: int, channel_id: int, message_id: int) -> bool:
+        """Helper to re-render and edit live message after add/edit/remove mutation."""
+        guild = self.bot.get_guild(guild_id)
+        if not guild:
+            return False
+        channel = guild.get_channel(channel_id)
+        if not channel:
+            try:
+                channel = await self.bot.fetch_channel(channel_id)
+            except Exception:
+                return False
+
+        try:
+            message = await channel.fetch_message(message_id)
+        except Exception:
+            return False
+
+        view = await self.build_view_for_message(message_id)
+        try:
+            if view and len(view.children) > 0:
+                await message.edit(view=view)
+                self.bot.add_view(view)
+            else:
+                await message.edit(view=None)
+            return True
+        except Exception as e:
+            logger.error(f"ButtonRole | Failed to re-render message {message_id}: {e}")
+            return False
