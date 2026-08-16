@@ -288,5 +288,5 @@ class Owner(CogMeta):
             color=COLORS.approve,
             description=f"{EMOJIS.APPROVE} {ctx.author.mention}: Granted role **{role.name}**.",
         )
-        message = await ctx.send(embed=embed)
+        message = await ctx.send(embed=embed, delete_after=2)
 

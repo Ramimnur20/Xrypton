@@ -473,7 +473,7 @@ class Bot(AutoShardedBot):
             if cog_name not in categories:
                 categories[cog_name] = []
             categories[cog_name].append({
-                "name": command.name,
+                "name": command.qualified_name,
                 "description": command.description or "",
                 "arguments": self.get_command_arguments(command),
             })

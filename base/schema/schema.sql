@@ -161,27 +161,6 @@ CREATE TABLE IF NOT EXISTS ancfg (
     guild_id INTEGER PRIMARY KEY
 );
 
-CREATE TABLE IF NOT EXISTS antinuke_modules (
-    guild_id INTEGER,
-    module TEXT,
-    punishment TEXT,
-    threshold INTEGER,
-    toggled INTEGER DEFAULT 0,
-    PRIMARY KEY (guild_id, module)
-);
-
-CREATE TABLE IF NOT EXISTS antinuke_admins (
-    guild_id INTEGER,
-    user_id INTEGER,
-    PRIMARY KEY (guild_id, user_id)
-);
-
-CREATE TABLE IF NOT EXISTS antinuke_whitelist (
-    guild_id INTEGER,
-    user_id INTEGER,
-    PRIMARY KEY (guild_id, user_id)
-);
-
 CREATE TABLE IF NOT EXISTS economy (
     user_id INTEGER PRIMARY KEY,
     money INTEGER DEFAULT 0,
@@ -278,4 +257,51 @@ CREATE TABLE IF NOT EXISTS voicemaster_channels (
     owner_id INTEGER NOT NULL,
     guild_id INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS antinuke (
+    guild_id INTEGER PRIMARY KEY,
+    enabled INTEGER DEFAULT 0,
+    disabled_at TIMESTAMP,
+    log_channel_id INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS antinuke_admins (
+    guild_id INTEGER,
+    user_id INTEGER,
+    PRIMARY KEY (guild_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS antinuke_whitelist (
+    guild_id INTEGER,
+    user_id INTEGER,
+    PRIMARY KEY (guild_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS antinuke_modules (
+    guild_id INTEGER,
+    module TEXT,
+    enabled INTEGER DEFAULT 1,
+    punishment TEXT DEFAULT 'ban',
+    PRIMARY KEY (guild_id, module)
+);
+
+CREATE TABLE IF NOT EXISTS antinuke_role_snapshots (
+    guild_id INTEGER,
+    role_id INTEGER,
+    name TEXT,
+    permissions INTEGER,
+    color INTEGER,
+    hoist INTEGER DEFAULT 0,
+    mentionable INTEGER DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (guild_id, role_id)
+);
+
+CREATE TABLE IF NOT EXISTS antinuke_guild_snapshots (
+    guild_id INTEGER PRIMARY KEY,
+    name TEXT,
+    icon TEXT,
+    verification_level INTEGER,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
