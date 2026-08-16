@@ -17,12 +17,6 @@ from datetime import datetime
 from base.redis_shim import FakeRedis
 from base.config import CLIENT
 
-
-# --- TIMESTAMP handling ---------------------------------------------------
-# Xrypton stores datetimes as TEXT in SQLite, but the economy cog expects
-# real ``datetime`` objects back from the database (it does arithmetic on
-# them). Register a converter so columns declared as TIMESTAMP are parsed
-# back into datetime objects, matching the original PostgreSQL behaviour.
 def _parse_timestamp(value):
     if value is None:
         return None
@@ -49,9 +43,6 @@ sqlite3.register_converter("TIMESTAMP", _parse_timestamp)
 sqlite3.register_adapter(datetime, lambda d: d.isoformat())
 
 
-# --- Bot configuration object ---------------------------------------------
-# The economy cog was written against ``bot.config.emojis.context.*`` and
-# ``ctx.config.colors.*``. Provide a compatible, lightweight config object.
 class _ContextEmojis:
     cash = "💲"
     premium = "⭐"
@@ -387,15 +378,12 @@ class Bot(AutoShardedBot):
 
     async def _load_database(self) -> SqlitePool:
         try:
-            # Use relative path for cross-platform compatibility
             db_path = pathlib.Path("Xrypton.db")
             schema_path = pathlib.Path("base/schema/schema.sql")
             
             db = await aiosqlite.connect(
                 str(db_path),
                 detect_types=sqlite3.PARSE_DECLTYPES,
-                # Autocommit mode so our manual BEGIN/COMMIT transactions work
-                # (the SqliteConnection.transaction() context manager relies on it).
                 isolation_level=None,
             )
             db.row_factory = aiosqlite.Row
@@ -405,7 +393,6 @@ class Bot(AutoShardedBot):
                 with open(schema_path, "r") as file:
                     schema = file.read()
                     if schema.strip():
-                        # Split and execute individual statements
                         statements = [s.strip() for s in schema.split(';') if s.strip()]
                         for statement in statements:
                             await db.execute(statement)
