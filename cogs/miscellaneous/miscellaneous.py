@@ -172,41 +172,6 @@ class Miscellaneous(CogMeta):
         await ctx.message.add_reaction("⬆️")
         await ctx.message.add_reaction("⬇️")
 
-    @example(",screenshot https://example.com")
-    @command(name="screenshot", aliases=["ss"], description="Screenshot a website")
-    async def screenshot(self, ctx: Context, *, url: str = None) -> Message:  # type: ignore
-        if url is None:
-            return await ctx.warn("You need to add a URL.")
-
-        if not match(r"^(http://|https://)", url):
-            url = f"https://{url}"
-        start_time = time.time()
-        async with ctx.typing():
-            try:
-                async with ctx.bot.browser.borrow_page() as page:
-                    await page.emulate_media(color_scheme="dark")
-                    await page.goto(url, wait_until="load", timeout=30000)
-
-                    screenshot = await page.screenshot(type="png")
-
-                screenshot_buffer = io.BytesIO(screenshot)
-                screenshot_buffer.seek(0)
-
-                exe_time = time.time() - start_time
-                execution_time = self.bot.humanize_time(exe_time)
-                embed = Embed(color=COLORS.neutral)
-                embed.set_image(url="attachment://screenshot.png")
-                embed.set_footer(text=f"⏰ took {exe_time: .2f} seconds")
-                embed.set_author(
-                    name=ctx.author.display_name, icon_url=ctx.author.display_avatar.url
-                )
-                return await ctx.send(
-                    embed=embed,
-                    file=discord.File(screenshot_buffer, filename="screenshot.png"),
-                )
-            except Exception as e:
-                await ctx.warn(f"Failed to get screenshot: `{e}`")
-
     # @command(name="shazam", description="Get a song from a video")
     # async def shazam(self, ctx: Context):
     #     if ctx.message.reference:

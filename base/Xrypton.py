@@ -109,7 +109,6 @@ from discord.ext.commands import (
 
 from loguru import logger
 from base.context import Context, XryptonHelp
-from base.managers.browser import BrowserHandler
 from collections import defaultdict
 from os import environ
 
@@ -305,7 +304,6 @@ class Bot(AutoShardedBot):
                 1467913714484121725 # remove if u want
             ],
         )
-        self.browser_handler = BrowserHandler()
         self._uptime = time.time()
         self.message_cache = defaultdict(list)
         self.cache_expiry_seconds = 30
@@ -431,8 +429,6 @@ class Bot(AutoShardedBot):
         await self.load_modules()
         self.boot = datetime.now()
         await self.load_extension("jishaku")
-        await self.browser_handler.init()
-        self.browser = self.browser_handler
         try:
             synced = await self.tree.sync()
             logger.info(f"Synced {len(synced)} application commands")
