@@ -325,3 +325,17 @@ CREATE TABLE IF NOT EXISTS antinuke_quarantine (
     guild_id INTEGER PRIMARY KEY,
     role_id INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS button_roles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id INTEGER NOT NULL,
+    channel_id INTEGER NOT NULL,
+    message_id INTEGER NOT NULL,
+    role_id INTEGER NOT NULL,
+    label TEXT NOT NULL,
+    style TEXT NOT NULL,
+    emoji TEXT,
+    custom_id TEXT NOT NULL UNIQUE,
+    created_by INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL
+);
