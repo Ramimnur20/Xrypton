@@ -767,3 +767,364 @@ class Backup(CogMeta):
                     pass
 
         return deleted_count
+
+
+    async def _create_backup_worker(
+        self,
+        ctx: Context,
+        name: Optional[str],
+        include_assets: bool,
+        job_id: str,
+        status_msg: Message,
+    ):
+        guild = ctx.guild
+        backup_id = await self.get_unique_backup_id()
+        backup_name = name or f"{guild.name} ({datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')})"
+
+        roles = [r for r in guild.roles if r != guild.default_role]
+        roles.sort(key=lambda r: r.position)
+
+        categories = list(guild.categories)
+        categories.sort(key=lambda c: c.position)
+
+        channels = [
+            c
+            for c in guild.channels
+            if not isinstance(c, CategoryChannel)
+        ]
+        channels.sort(key=lambda c: c.position)
+
+        asset_count = 0
+        if include_assets:
+            if guild.icon:
+                asset_count += 1
+            if guild.splash:
+                asset_count += 1
+            if guild.banner:
+                asset_count += 1
+            if getattr(guild, "discovery_splash", None):
+                asset_count += 1
+            asset_count += len(guild.emojis)
+            asset_count += len(guild.stickers)
+
+        progress_total = 1 + len(roles) + len(categories) + len(channels) + asset_count
+        progress_current = 0
+
+        await self.create_job(
+            job_id=job_id,
+            backup_id=backup_id,
+            guild_id=guild.id,
+            user_id=ctx.author.id,
+            job_type="create",
+            progress_total=progress_total,
+            initial_step="Starting server snapshot...",
+        )
+
+        role_id_to_idx: Dict[int, int] = {}
+        cat_id_to_idx: Dict[int, int] = {}
+        chan_id_to_idx: Dict[int, int] = {}
+
+        for idx, r in enumerate(roles):
+            role_id_to_idx[r.id] = idx
+        for idx, c in enumerate(categories):
+            cat_id_to_idx[c.id] = idx
+        for idx, ch in enumerate(channels):
+            chan_id_to_idx[ch.id] = idx
+
+        size_bytes = 0
+
+        try:
+            # 1. Server settings
+            progress_current += 1
+            await self.update_job(job_id, progress_current, "Saving server settings...")
+
+            settings_to_save: Dict[str, str] = {
+                "name": guild.name,
+                "verification_level": guild.verification_level.name,
+                "explicit_content_filter": guild.explicit_content_filter.name,
+                "default_notifications": guild.default_notifications.name,
+                "afk_timeout": str(guild.afk_timeout),
+                "premium_progress_bar_enabled": str(int(bool(guild.premium_progress_bar_enabled))),
+                "system_channel_flags": str(guild.system_channel_flags.value if guild.system_channel_flags else 0),
+                "preferred_locale": str(guild.preferred_locale),
+                "everyone_permissions": str(guild.default_role.permissions.value),
+            }
+
+            if guild.afk_channel and guild.afk_channel.id in chan_id_to_idx:
+                settings_to_save["afk_channel_index"] = str(chan_id_to_idx[guild.afk_channel.id])
+            if guild.system_channel and guild.system_channel.id in chan_id_to_idx:
+                settings_to_save["system_channel_index"] = str(chan_id_to_idx[guild.system_channel.id])
+            if getattr(guild, "rules_channel", None) and guild.rules_channel.id in chan_id_to_idx:
+                settings_to_save["rules_channel_index"] = str(chan_id_to_idx[guild.rules_channel.id])
+            if getattr(guild, "public_updates_channel", None) and guild.public_updates_channel.id in chan_id_to_idx:
+                settings_to_save["public_updates_channel_index"] = str(chan_id_to_idx[guild.public_updates_channel.id])
+
+            for k, v in settings_to_save.items():
+                size_bytes += len(k) + len(v)
+                await self.db.execute(
+                    "INSERT INTO backup_settings (backup_id, key, value) VALUES ($1, $2, $3)",
+                    backup_id,
+                    k,
+                    v,
+                )
+
+            # 2. Roles
+            for idx, r in enumerate(roles):
+                if await self.is_job_cancelled(job_id):
+                    await self.finish_job(job_id, "cancelled", final_step="Creation cancelled by user.")
+                    return
+
+                progress_current += 1
+                await self.update_job(job_id, progress_current, f"Saving role: @{r.name}")
+
+                size_bytes += len(r.name) + 32
+                await self.db.execute(
+                    """
+                    INSERT INTO backup_roles (
+                        backup_id, role_index, name, color, hoist, mentionable, position, permissions, is_managed
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    """,
+                    backup_id,
+                    idx,
+                    r.name,
+                    r.color.value,
+                    int(r.hoist),
+                    int(r.mentionable),
+                    r.position,
+                    r.permissions.value,
+                    int(r.managed),
+                )
+
+            # 3. Categories
+            for idx, cat in enumerate(categories):
+                if await self.is_job_cancelled(job_id):
+                    await self.finish_job(job_id, "cancelled", final_step="Creation cancelled by user.")
+                    return
+
+                progress_current += 1
+                await self.update_job(job_id, progress_current, f"Saving category: {cat.name}")
+
+                size_bytes += len(cat.name) + 16
+                await self.db.execute(
+                    """
+                    INSERT INTO backup_categories (
+                        backup_id, category_index, name, position
+                    ) VALUES ($1, $2, $3, $4)
+                    """,
+                    backup_id,
+                    idx,
+                    cat.name,
+                    cat.position,
+                )
+
+                for target, overwrite in cat.overwrites.items():
+                    target_is_everyone = int(target == guild.default_role)
+                    target_role_idx = role_id_to_idx.get(target.id) if isinstance(target, Role) else None
+                    if target_is_everyone or target_role_idx is not None:
+                        allow_val, deny_val = overwrite.pair()
+                        await self.db.execute(
+                            """
+                            INSERT INTO backup_category_overwrites (
+                                backup_id, category_index, target_role_index, target_is_everyone, allow, deny
+                            ) VALUES ($1, $2, $3, $4, $5, $6)
+                            """,
+                            backup_id,
+                            idx,
+                            target_role_idx,
+                            target_is_everyone,
+                            allow_val.value,
+                            deny_val.value,
+                        )
+
+            # 4. Channels
+            for idx, ch in enumerate(channels):
+                if await self.is_job_cancelled(job_id):
+                    await self.finish_job(job_id, "cancelled", final_step="Creation cancelled by user.")
+                    return
+
+                progress_current += 1
+                await self.update_job(job_id, progress_current, f"Saving channel: #{ch.name}")
+
+                c_type = "text"
+                if hasattr(ch, "is_news") and ch.is_news():
+                    c_type = "announcement"
+                elif isinstance(ch, getattr(discord, "ForumChannel", ())):
+                    c_type = "forum"
+                elif isinstance(ch, getattr(discord, "StageChannel", ())):
+                    c_type = "stage"
+                elif isinstance(ch, VoiceChannel):
+                    c_type = "voice"
+
+                cat_idx = cat_id_to_idx.get(ch.category_id) if ch.category_id else None
+                topic = getattr(ch, "topic", None)
+                nsfw = int(getattr(ch, "nsfw", False))
+                slowmode = getattr(ch, "slowmode_delay", 0)
+                bitrate = getattr(ch, "bitrate", None)
+                user_limit = getattr(ch, "user_limit", None)
+
+                size_bytes += len(ch.name) + (len(topic) if topic else 0) + 32
+                await self.db.execute(
+                    """
+                    INSERT INTO backup_channels (
+                        backup_id, channel_index, category_index, type, name, position,
+                        topic, nsfw, slowmode_delay, bitrate, user_limit
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                    """,
+                    backup_id,
+                    idx,
+                    cat_idx,
+                    c_type,
+                    ch.name,
+                    ch.position,
+                    topic,
+                    nsfw,
+                    slowmode,
+                    bitrate,
+                    user_limit,
+                )
+
+                for target, overwrite in ch.overwrites.items():
+                    target_is_everyone = int(target == guild.default_role)
+                    target_role_idx = role_id_to_idx.get(target.id) if isinstance(target, Role) else None
+                    if target_is_everyone or target_role_idx is not None:
+                        allow_val, deny_val = overwrite.pair()
+                        await self.db.execute(
+                            """
+                            INSERT INTO backup_channel_overwrites (
+                                backup_id, channel_index, target_role_index, target_is_everyone, allow, deny
+                            ) VALUES ($1, $2, $3, $4, $5, $6)
+                            """,
+                            backup_id,
+                            idx,
+                            target_role_idx,
+                            target_is_everyone,
+                            allow_val.value,
+                            deny_val.value,
+                        )
+
+            # 5. Assets (Optional)
+            if include_assets:
+                for asset_name, asset_obj in (
+                    ("icon", guild.icon),
+                    ("splash", guild.splash),
+                    ("banner", guild.banner),
+                    ("discovery_splash", getattr(guild, "discovery_splash", None)),
+                ):
+                    if asset_obj:
+                        if await self.is_job_cancelled(job_id):
+                            await self.finish_job(job_id, "cancelled", final_step="Creation cancelled by user.")
+                            return
+                        progress_current += 1
+                        await self.update_job(job_id, progress_current, f"Downloading server {asset_name}...")
+                        try:
+                            data = await asset_obj.read()
+                            size_bytes += len(data)
+                            await self.db.execute(
+                                "INSERT INTO backup_assets (backup_id, asset_type, data) VALUES ($1, $2, $3)",
+                                backup_id,
+                                asset_name,
+                                data,
+                            )
+                        except Exception as e:
+                            logger.warning(f"Failed to read asset {asset_name}: {e}")
+
+                for emoji in guild.emojis[:50]:
+                    if await self.is_job_cancelled(job_id):
+                        await self.finish_job(job_id, "cancelled", final_step="Creation cancelled by user.")
+                        return
+                    progress_current += 1
+                    await self.update_job(job_id, progress_current, f"Downloading emoji: :{emoji.name}:")
+                    try:
+                        data = await emoji.read()
+                        size_bytes += len(data)
+                        await self.db.execute(
+                            "INSERT INTO backup_emojis (backup_id, name, data) VALUES ($1, $2, $3)",
+                            backup_id,
+                            emoji.name,
+                            data,
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to read emoji {emoji.name}: {e}")
+
+                for sticker in guild.stickers[:50]:
+                    if await self.is_job_cancelled(job_id):
+                        await self.finish_job(job_id, "cancelled", final_step="Creation cancelled by user.")
+                        return
+                    progress_current += 1
+                    await self.update_job(job_id, progress_current, f"Downloading sticker: {sticker.name}")
+                    try:
+                        data = await sticker.read()
+                        size_bytes += len(data)
+                        await self.db.execute(
+                            """
+                            INSERT INTO backup_stickers (backup_id, name, description, emoji, data)
+                            VALUES ($1, $2, $3, $4, $5)
+                            """,
+                            backup_id,
+                            sticker.name,
+                            sticker.description or "",
+                            sticker.emoji or "",
+                            data,
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to read sticker {sticker.name}: {e}")
+
+            # Save master backup record
+            await self.db.execute(
+                """
+                INSERT INTO backups (
+                    id, owner_id, source_guild_id, source_guild_name, name, created_at,
+                    includes_assets, channel_count, role_count, category_count, size_estimate_bytes
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                """,
+                backup_id,
+                ctx.author.id,
+                guild.id,
+                guild.name,
+                backup_name,
+                datetime.now(timezone.utc),
+                int(include_assets),
+                len(channels),
+                len(roles),
+                len(categories),
+                size_bytes,
+            )
+
+            await self.finish_job(job_id, "completed", final_step="Backup created successfully.")
+
+            size_str = self.bot.format_size(size_bytes)
+            embed = discord.Embed(
+                title=f"{EMOJIS.APPROVE} Backup Created Successfully",
+                description=(
+                    f"Backup **`{backup_id}`** has been created and saved.\n\n"
+                    f"**Backup ID:** `{backup_id}`\n"
+                    f"**Name:** {backup_name}\n"
+                    f"**Source Server:** {guild.name} (`{guild.id}`)\n"
+                    f"**Roles:** {len(roles)}\n"
+                    f"**Categories:** {len(categories)}\n"
+                    f"**Channels:** {len(channels)}\n"
+                    f"**Assets Included:** {'Yes' if include_assets else 'No'}\n"
+                    f"**Estimated Size:** {size_str}\n\n"
+                    f"💡 *To restore this backup in any server where you have permissions, run:* `,backup load {backup_id}`"
+                ),
+                color=COLORS.approve,
+                timestamp=datetime.now(timezone.utc),
+            )
+            embed.set_footer(text="Xrypton Backups | ID is required to load or delete")
+            try:
+                await status_msg.edit(embed=embed, view=None)
+            except Exception:
+                await ctx.send(embed=embed)
+
+        except Exception as e:
+            logger.exception(f"Error during backup creation job {job_id}: {e}")
+            await self.finish_job(job_id, "failed", error_message=str(e), final_step=f"Failed: {e}")
+            err_embed = self.embed(
+                f"{EMOJIS.DENY} Backup Creation Failed",
+                f"An error occurred while creating backup `{backup_id}`:\n```{e}```",
+                COLORS.deny,
+            )
+            try:
+                await status_msg.edit(embed=err_embed, view=None)
+            except Exception:
+                await ctx.send(embed=err_embed)
