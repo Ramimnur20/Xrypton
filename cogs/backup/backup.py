@@ -1617,11 +1617,7 @@ class Backup(CogMeta):
                 "• `,backup cancel <id> [--rollback]` — Abort a running job (with optional rollback)\n"
                 "• `,backup diff <id>` — Compare a backup against the current server\n"
                 "• `,backup export <id>` — Export backup configuration to a JSON file\n\n"
-                "🔒 **Ownership & Security:**\n"
-                "Backups are tied to your Discord account. Only you can load, view, or delete your backups.\n\n"
-                "⚠️ **v1 Scope & Limitations:**\n"
-                "Message history, member lists/member-role assignments, and guild ban lists are out of scope for v1."
-            ),
+                "Note: Backups are tied to your Discord account. Only you can load, view, or delete your backups.\n\n"),
         )
         embed.add_field(
             name="Required Bot Permissions",
