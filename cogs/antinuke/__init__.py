@@ -2,6 +2,6 @@ from base.Xrypton import Bot
 
 
 async def setup(bot: Bot) -> None:
-    from .antinuke import Antinuke
+    from .antinuke import AntiNuke
 
-    await bot.add_cog(Antinuke(bot))
+    await bot.add_cog(AntiNuke(bot))

@@ -11,12 +11,6 @@ CREATE TABLE IF NOT EXISTS lost_boosters (
     lost_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS antiraid (
-    guild_id INTEGER,
-    command TEXT,
-    punishment TEXT,
-    seconds INTEGER
-);
 
 CREATE TABLE IF NOT EXISTS whitelist (
     guild_id INTEGER,
@@ -338,4 +332,22 @@ CREATE TABLE IF NOT EXISTS button_roles (
     custom_id TEXT NOT NULL UNIQUE,
     created_by INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS logging_config (
+    guild_id INTEGER PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 0,
+    category_id INTEGER,
+    server_channel_id INTEGER,
+    member_channel_id INTEGER,
+    vc_channel_id INTEGER,
+    moderation_channel_id INTEGER,
+    message_channel_id INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS logging_ignores (
+    guild_id INTEGER,
+    target_type TEXT,
+    target_id INTEGER,
+    PRIMARY KEY (guild_id, target_type, target_id)
 );

@@ -1,5 +1,5 @@
 from base.managers.predicates import example, has_permissions
-from typing import Union
+from typing import Union, Optional
 import requests
 import io
 import time
@@ -63,6 +63,7 @@ from difflib import get_close_matches
 
 from PIL import Image
 from colorthief import ColorThief
+from base.managers.mod_logger import log_moderation_action
 
 
 class Moderation(CogMeta):
@@ -101,9 +102,11 @@ class Moderation(CogMeta):
                 await confirmation_view.send_confirmation()
             else:
                 await user.ban(reason=reason, delete_message_days=7)
+                await log_moderation_action(self.bot, ctx.guild, "Ban", ctx.author, user, reason)
                 return await ctx.approve(f"{user.mention} has been **banned**.")
         else:
             await ctx.guild.ban(user, reason=reason)  # type: ignore
+            await log_moderation_action(self.bot, ctx.guild, "Ban", ctx.author, user, reason)
             return await ctx.approve(f"{user.mention} has been **banned**.")
 
     @example(",kick @voby for being annoying")
@@ -131,6 +134,7 @@ class Moderation(CogMeta):
                 await confirmation_view.send_confirmation()
             else:
                 await user.kick(reason=reason)
+                await log_moderation_action(self.bot, ctx.guild, "Kick", ctx.author, user, reason)
                 return await ctx.approve(f"{user.mention} has been **kicked**.")
 
     @example(",nuke")
@@ -170,6 +174,7 @@ class Moderation(CogMeta):
                     user.id,
                 )
                 await user.edit(nick=None)
+                await log_moderation_action(self.bot, ctx.guild, "Forced Nickname", ctx.author, user, "Removed forced nickname")
                 return await ctx.approve(
                     f"Removed **forced nickname** for {user.mention}!"
                 )
@@ -196,6 +201,7 @@ class Moderation(CogMeta):
                     ctx.guild.id,  # type: ignore
                 )
             await user.edit(nick=name)
+            await log_moderation_action(self.bot, ctx.guild, "Forced Nickname", ctx.author, user, f"Forced nickname to `{name}`")
             return await ctx.approve(
                 f"Now **forcing nickname** for **{user.name}** to `{name}`"
             )
@@ -231,8 +237,8 @@ class Moderation(CogMeta):
 
         lockdown_role_id = await self.bot.pool.fetchval(
             """
-            SELECT role_id 
-            FROM lockdown 
+            SELECT role_id
+            FROM lockdown
             WHERE guild_id = $1
             """,
             ctx.guild.id,
@@ -254,8 +260,8 @@ class Moderation(CogMeta):
     async def lockdown_all(self, ctx: Context):
         lockdown_role_id = await self.bot.pool.fetchval(
             """
-            SELECT role_id 
-            FROM lockdown 
+            SELECT role_id
+            FROM lockdown
             WHERE guild_id = $1
             """,
             ctx.guild.id,
@@ -374,8 +380,8 @@ class Moderation(CogMeta):
     async def lockdown_role(self, ctx: Context, *, role: Role):
         if await self.bot.pool.fetchval(
             """
-            SELECT role_id 
-            FROM lockdown 
+            SELECT role_id
+            FROM lockdown
             WHERE guild_id = $1 AND role_id = $2
             """,
             ctx.guild.id,
@@ -409,8 +415,8 @@ class Moderation(CogMeta):
             channel = ctx.channel
         lockdown_role_id = await self.bot.pool.fetchval(
             """
-            SELECT role_id 
-            FROM lockdown 
+            SELECT role_id
+            FROM lockdown
             WHERE guild_id = $1
             """,
             ctx.guild.id,
@@ -432,8 +438,8 @@ class Moderation(CogMeta):
     async def unlock_all(self, ctx: Context):
         lockdown_role_id = await self.bot.pool.fetchval(
             """
-            SELECT role_id 
-            FROM lockdown 
+            SELECT role_id
+            FROM lockdown
             WHERE guild_id = $1
             """,
             ctx.guild.id,
@@ -627,6 +633,7 @@ class Moderation(CogMeta):
                 if stripped_roles
                 else "None"
             )
+            await log_moderation_action(self.bot, ctx.guild, "Strip Staff", ctx.author, member, f"Stripped roles: {stripped_roles_mentions}")
             return await ctx.approve(
                 f"Removed {member.mention} from: {stripped_roles_mentions}."
             )
@@ -638,6 +645,7 @@ class Moderation(CogMeta):
     @has_permissions(moderate_members=True)
     async def imute(self, ctx: Context, *, member: Member):
         await ctx.channel.set_permissions(member, attach_files=False, embed_links=False)  # type: ignore
+        await log_moderation_action(self.bot, ctx.guild, "Image Mute", ctx.author, member, f"Image perms removed in #{ctx.channel.name}")
         return await ctx.embed(
             description=f"{ctx.author.mention}: Removed **attach files & embed links** from **{member.name}**",
             color=0xE60000,
@@ -648,6 +656,7 @@ class Moderation(CogMeta):
     @has_permissions(moderate_members=True)
     async def iunmute(self, ctx: Context, *, member: Member):
         await ctx.channel.set_permissions(member, attach_files=True, embed_links=True)  # type: ignore
+        await log_moderation_action(self.bot, ctx.guild, "Image Unmute", ctx.author, member, f"Image perms restored in #{ctx.channel.name}")
         return await ctx.embed(
             description=f"{ctx.author.mention}: Restored **attach files & embed links** to **{member.name}**",
             color=0xE60000,
@@ -664,6 +673,7 @@ class Moderation(CogMeta):
         await ctx.channel.set_permissions(
             member, add_reactions=False, use_external_emojis=False
         )  # type: ignore
+        await log_moderation_action(self.bot, ctx.guild, "Reaction Mute", ctx.author, member, f"Reaction perms removed in #{ctx.channel.name}")
         return await ctx.embed(
             description=f"Removed {member.mention}'s permissions to **react** and use **external emotes**",
             color=COLORS.red,
@@ -680,6 +690,7 @@ class Moderation(CogMeta):
         await ctx.channel.set_permissions(
             member, add_reactions=True, use_external_emojis=True
         )  # type: ignore
+        await log_moderation_action(self.bot, ctx.guild, "Reaction Unmute", ctx.author, member, f"Reaction perms restored in #{ctx.channel.name}")
         return await ctx.embed(
             description=f"Restored {member.mention}'s permissions to **react** and use **external emotes**",
             color=COLORS.red,
@@ -840,10 +851,11 @@ class Moderation(CogMeta):
     @has_permissions(moderate_members=True)
     async def unban(self, ctx: Context, *, user: User):
         await ctx.guild.unban(user)
+        await log_moderation_action(self.bot, ctx.guild, "Unban", ctx.author, user, "Unbanned")
         return await ctx.approve(f"{user.mention} has been **unbanned.**")
 
     @example(",mute @voby 60s")
-    @command(name="mute", description="mute a member")
+    @command(name="mute", aliases=["timeout"], description="mute a member")
     @has_permissions(moderate_members=True)
     async def mute(
         self, ctx: Context,         member: Member, *, time: str = "60s"
@@ -869,21 +881,31 @@ class Moderation(CogMeta):
         else:
             pass
 
-        time = humanfriendly.parse_timespan(time)
+        parsed_time = humanfriendly.parse_timespan(time)
         try:
             await member.timeout(
-                utcnow() + timedelta(seconds=time),
+                utcnow() + timedelta(seconds=parsed_time),
                 reason=f"User timed out by {ctx.author}",
             )
+            formatted_duration = humanfriendly.format_timespan(parsed_time)
+            await log_moderation_action(
+                self.bot,
+                ctx.guild,
+                "Timeout",
+                ctx.author,
+                member,
+                f"Timed out for {formatted_duration}",
+                duration=formatted_duration,
+            )
             return await ctx.embed(
-                description=f"{ctx.author.mention}: **{member.name}** is now muted for {humanfriendly.format_timespan(time)}",
+                description=f"{ctx.author.mention}: **{member.name}** is now muted for {formatted_duration}",
                 color=COLORS.red,
             )
         except Exception as E:
             return await ctx.warn(f"I'm **unable** to mute this user.")
 
     @example(",unmute @voby")
-    @command(name="unmute", description="Unmute a member")
+    @command(name="unmute", aliases=["untimeout"], description="Unmute a member")
     @has_permissions(moderate_members=True)
     async def unmute(self, ctx: Context, *,         member: Member):
         if isinstance(member, str):
@@ -908,9 +930,73 @@ class Moderation(CogMeta):
             pass
 
         await member.timeout(None)
+        await log_moderation_action(self.bot, ctx.guild, "Untimeout", ctx.author, member, "Timeout removed")
         return await ctx.embed(
             description=f"{ctx.author.mention}: **{member.name}** is now unmuted.",
             color=COLORS.red,
+        )
+
+    @example(",warn @voby spamming")
+    @hybrid_group(name="warn", invoke_without_command=True, description="Warn a member")
+    @has_permissions(moderate_members=True)
+    async def warn_command(self, ctx: Context, member: Member, *, reason: str = "No reason provided."):
+        if member.id == self.bot.user.id:
+            return await ctx.deny("I cannot **warn** myself.")
+        if member.id == ctx.author.id:
+            return await ctx.deny("You cannot **warn** yourself.")
+        if ctx.author.id != ctx.guild.owner_id:
+            if member.top_role.position >= ctx.author.top_role.position:
+                return await ctx.warn("You cannot **warn** a member with a higher or equal role to you.")
+
+        current_warns = await self.bot.pool.fetchval(
+            "SELECT warns FROM warnings WHERE guild_id = $1 AND user_id = $2",
+            ctx.guild.id,
+            member.id,
+        ) or 0
+        new_warns = current_warns + 1
+        await self.bot.pool.execute(
+            "INSERT OR REPLACE INTO warnings (guild_id, user_id, warns) VALUES ($1, $2, $3)",
+            ctx.guild.id,
+            member.id,
+            new_warns,
+        )
+        await log_moderation_action(
+            self.bot,
+            ctx.guild,
+            "Warn",
+            ctx.author,
+            member,
+            reason,
+            extra={"total_warns": new_warns},
+        )
+        return await ctx.approve(f"Warned {member.mention} for **{reason}** (Total warnings: `{new_warns}`).")
+
+    @warn_command.command(name="clear", description="Clear all warnings for a member")
+    @has_permissions(moderate_members=True)
+    async def warn_clear(self, ctx: Context, member: Member):
+        await self.bot.pool.execute(
+            "DELETE FROM warnings WHERE guild_id = $1 AND user_id = $2",
+            ctx.guild.id,
+            member.id,
+        )
+        await log_moderation_action(self.bot, ctx.guild, "Warns Cleared", ctx.author, member, "All warnings cleared")
+        return await ctx.approve(f"Cleared all warnings for {member.mention}.")
+
+    @example(",warnings @voby")
+    @command(name="warnings", aliases=["warns"], description="Check warnings for a member")
+    @has_permissions(moderate_members=True)
+    async def warnings(self, ctx: Context, member: Optional[Member] = None):
+        target = member or ctx.author
+        warns = await self.bot.pool.fetchval(
+            "SELECT warns FROM warnings WHERE guild_id = $1 AND user_id = $2",
+            ctx.guild.id,
+            target.id,
+        ) or 0
+        return await ctx.send(
+            embed=Embed(
+                description=f"⚠️ {target.mention} has **{warns}** warning{'s' if warns != 1 else ''}.",
+                color=COLORS.neutral,
+            )
         )
 
     @example(",ticket channel #tickets")

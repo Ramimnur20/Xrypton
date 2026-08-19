@@ -58,34 +58,49 @@ from datetime import datetime, timedelta
 import asyncio
 from psutil import Process
 from difflib import get_close_matches
+from base.managers.snipe_cache import (
+    Sniped as sharedSniped,
+    editSnipe as sharedEditSnipe,
+    reactSnipe as sharedReactSnipe,
+    record_delete,
+    record_edit,
+    record_reaction_remove,
+    record_raw_message,
+    clear_channel_snipes,
+)
 
 
 class Snipe(CogMeta):
-    Sniped = {}
-    editSnipe = {}
-    reactSnipe = {}
+    Sniped = sharedSniped
+    editSnipe = sharedEditSnipe
+    reactSnipe = sharedReactSnipe
+
+    @Cog.listener("on_message")
+    async def snipe_message_listener(self, message: Message) -> None:
+        if not message.guild or message.author.bot:
+            return
+        record_raw_message(message)
 
     @Cog.listener("on_message_delete")
     async def snipe_listener(self, message: Message) -> None:
         if message.author.bot:
             return
 
-        if message.channel.id not in self.Sniped:
-            self.Sniped[message.channel.id] = []
-
         image_url = None
         if message.attachments:
             image_url = message.attachments[0].url
 
-        self.Sniped[message.channel.id].append(
-            {
-                "author": str(message.author),
-                "author_url": str(message.author.display_avatar.url),
-                "content": message.content,
-                "image_url": image_url,
-                "timestamp": message.created_at,
-                "deleted_at": datetime.utcnow(),
-            }
+        record_delete(
+            channel_id=message.channel.id,
+            author=str(message.author),
+            author_url=str(message.author.display_avatar.url),
+            content=message.content or "",
+            image_url=image_url,
+            created_at=message.created_at,
+            deleted_at=datetime.utcnow(),
+            author_id=message.author.id,
+            message_id=message.id,
+            attachments=[a.url for a in message.attachments] if message.attachments else [],
         )
 
     @Cog.listener("on_raw_reaction_remove")
@@ -97,38 +112,28 @@ class Snipe(CogMeta):
         if not channel:
             return
 
-        message_link = f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}"
-        emoji = str(payload.emoji)
-        if payload.channel_id not in self.reactSnipe:
-            self.reactSnipe[payload.channel_id] = []
-
-        self.reactSnipe[payload.channel_id].append(
-            {
-                "author": str(payload.user_id),
-                "emoji": emoji,
-                "message_link": message_link,
-                "message_id": payload.message_id,
-                "timestamp": datetime.utcnow(),
-            }
+        record_reaction_remove(
+            channel_id=payload.channel_id,
+            guild_id=payload.guild_id,
+            user_id=payload.user_id,
+            emoji=str(payload.emoji),
+            message_id=payload.message_id,
+            timestamp=datetime.utcnow(),
         )
 
     @Cog.listener("on_message_edit")
     async def editsnipe_listener(self, before: Message, after: Message) -> None:
         if before.guild and not before.author.bot:
-            channel_id = before.channel.id
-
-            if channel_id not in self.editSnipe:
-                self.editSnipe[channel_id] = []
-
-            self.editSnipe[channel_id].append(
-                {
-                    "before_content": before.content,
-                    "after_content": after.content,
-                    "author": str(before.author),
-                    "author_url": str(before.author.display_avatar.url),
-                    "timestamp": (before.edited_at),
-                    "edited_at": datetime.utcnow(),
-                }
+            record_edit(
+                channel_id=before.channel.id,
+                author=str(before.author),
+                author_url=str(before.author.display_avatar.url),
+                before_content=before.content or "",
+                after_content=after.content or "",
+                author_id=before.author.id,
+                message_id=before.id,
+                created_at=before.created_at,
+                edited_at=datetime.utcnow(),
             )
 
     @example(",reactionsnipe")
@@ -236,19 +241,7 @@ class Snipe(CogMeta):
     )
     @has_permissions(manage_messages=True)
     async def clearsnipes(self, ctx: Context):
-        cleared = False
-
-        if ctx.message.channel.id in self.Sniped:
-            del self.Sniped[ctx.message.channel.id]
-            cleared = True
-
-        if ctx.message.channel.id in self.editSnipe:
-            del self.editSnipe[ctx.message.channel.id]
-            cleared = True
-
-        if ctx.message.channel.id in self.reactSnipe:
-            del self.reactSnipe[ctx.message.channel.id]
-            cleared = True
+        cleared = clear_channel_snipes(ctx.message.channel.id)
 
         if cleared:
             return await ctx.message.add_reaction("✅")  # type: ignore

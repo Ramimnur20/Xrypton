@@ -1374,7 +1374,6 @@ class Server(CogMeta):
     @example(",boosterrole")
     @hybrid_group(
         name="boosterrole",
-        aliases=["br"],
         description="Configure boosterroles in your guild.",
         invoke_without_command=True,
     )

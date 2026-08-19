@@ -643,9 +643,26 @@ class Information(CogMeta):
         if not ctx.guild.icon:
             return await ctx.warn(f"{ctx.guild.name} does not have an **icon** set.")
 
+        buttons = [
+            {
+                "label": "PNG",
+                "emoji": "🖼️",
+                "url": ctx.guild.icon.with_format("png").url,
+            }
+        ]
+        if ctx.guild.icon.is_animated():
+            buttons.append(
+                {
+                    "label": "GIF",
+                    "emoji": "🎬",
+                    "url": ctx.guild.icon.with_format("gif").url,
+                }
+            )
+
         return await ctx.embed(
             title=f"{ctx.guild.name}'s icon",
             image=ctx.guild.icon.url,
+            url=ctx.guild.icon.url,
             author={
                 "name": ctx.author.display_name,
                 "icon_url": ctx.author.display_avatar.url,
@@ -656,24 +673,8 @@ class Information(CogMeta):
                     "value": f"`{ctx.guild.icon.key}`",
                     "inline": True,
                 },
-                {
-                    "name": "Created",
-                    "value": f"{format_dt(ctx.guild.icon.created_at, 'F')} ({format_dt(ctx.guild.icon.created_at, 'R')})",
-                    "inline": True,
-                },
             ],
-            buttons=[
-                {
-                    "label": "PNG",
-                    "emoji": "🖼️",
-                    "url": ctx.guild.icon.url.format("png"),
-                },
-                {
-                    "label": "GIF",
-                    "emoji": "🎬",
-                    "url": ctx.guild.icon.url.format("gif"),
-                },
-            ],
+            buttons=buttons,
         )
 
     @example(",serverbanner")
@@ -685,6 +686,22 @@ class Information(CogMeta):
     async def guildbanner(self, ctx: Context):
         if not ctx.guild.banner:
             return await ctx.warn(f"{ctx.guild.name} does not have a **banner** set.")
+
+        buttons = [
+            {
+                "label": "PNG",
+                "emoji": "🖼️",
+                "url": ctx.guild.banner.with_format("png").url,
+            }
+        ]
+        if ctx.guild.banner.is_animated():
+            buttons.append(
+                {
+                    "label": "GIF",
+                    "emoji": "🎬",
+                    "url": ctx.guild.banner.with_format("gif").url,
+                }
+            )
 
         return await ctx.embed(
             title=f"{ctx.guild.name}'s banner",
@@ -700,12 +717,8 @@ class Information(CogMeta):
                     "value": f"`{ctx.guild.banner.key}`",
                     "inline": True,
                 },
-                {
-                    "name": "Created",
-                    "value": f"{format_dt(ctx.guild.banner.created_at, 'F')} ({format_dt(ctx.guild.banner.created_at, 'R')})",
-                    "inline": True,
-                },
             ],
+            buttons=buttons,
         )
 
     @example(",bots")

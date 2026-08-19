@@ -482,16 +482,16 @@ class XryptonHelp(HelpCommand):
 
     async def send_bot_help(self, mapping):
         categories = {}
-        
+
         for cog, command_list in mapping.items():
             commands = [cmd for cmd in command_list if not cmd.hidden]
             if commands:
                 cog_name = cog.qualified_name if cog else "Uncategorized"
                 if cog_name not in ["Jishaku", "Syncing"]:
                     categories[cog_name] = commands
-        
+
         total_count = len([c for c in self.context.bot.walk_commands() if c.cog_name != "Jishaku"])
-        
+
         if categories:
             view = HelpComponents(categories, total_count)
             await self.context.send(view=view)
@@ -652,9 +652,19 @@ class Confirmation(View):
         if self.action == "ban" and self.user:
             await self.user.ban(reason=self.reason)
             await self.ctx.approve(f"{self.user.mention} has been **banned**.")
+            try:
+                from base.managers.mod_logger import log_moderation_action
+                await log_moderation_action(self.ctx.bot, self.ctx.guild, "Ban", self.ctx.author, self.user, self.reason)
+            except Exception:
+                pass
         elif self.action == "kick" and self.user:
             await self.user.kick(reason=self.reason)
             await self.ctx.approve(f"{self.user.mention} has been **kicked**.")
+            try:
+                from base.managers.mod_logger import log_moderation_action
+                await log_moderation_action(self.ctx.bot, self.ctx.guild, "Kick", self.ctx.author, self.user, self.reason)
+            except Exception:
+                pass
 
         if self.message:
             await self.message.delete()

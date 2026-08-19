@@ -1,14 +1,15 @@
-import sys, os, discord
+import sys, os, discord, re
 from discord.ext import commands
-from typing import Union
+from typing import Union, Optional, Tuple, Dict, Any
 
 
 class EmbedBuilder:
-    def ordinal(self, num: int) -> str:
+    @staticmethod
+    def ordinal(num: int) -> str:
         """Convert from number to ordinal (10 - 10th)"""
         numb = str(num)
         if numb.startswith("0"):
-            numb = numb.strip("0")
+            numb = numb.strip("0") or "0"
         if numb in ["11", "12", "13"]:
             return numb + "th"
         if numb.endswith("1"):
@@ -20,16 +21,32 @@ class EmbedBuilder:
         else:
             return numb + "th"
 
-    def get_parts(params):  # type: ignore
-        params = params.replace("{embed}", "")  # type: ignore
-        return [p.strip()[1:-1] for p in params.split("$v")]
+    @staticmethod
+    def get_parts(params: str) -> list[str]:
+        if not params:
+            return []
+        params = params.replace("{embed}", "").replace("{EMBED}", "").strip()
+        parts = []
+        for p in params.split("$v"):
+            p = p.strip()
+            if not p:
+                continue
+            if p.startswith("{") and p.endswith("}"):
+                p = p[1:-1].strip()
+            if p:
+                parts.append(p)
+        return parts
 
-    def embed_replacement(user: discord.Member, params: str = None):  # type: ignore
+    @staticmethod
+    def embed_replacement(user: Union[discord.Member, discord.User], params: str = None) -> Optional[str]:
         if params is None:
             return None
+
+        guild = getattr(user, "guild", None)
+
         if "{user}" in params:
             params = params.replace(
-                "{user}", str(user.name) + "#" + str(user.discriminator)
+                "{user}", str(user.name) + "#" + str(getattr(user, "discriminator", "0"))
             )
         if "{user.mention}" in params:
             params = params.replace("{user.mention}", user.mention)
@@ -38,215 +55,239 @@ class EmbedBuilder:
         if "{user.avatar}" in params:
             params = params.replace("{user.avatar}", str(user.display_avatar.url))
         if "{user.joined_at}" in params:
+            joined_at = getattr(user, "joined_at", None)
             params = params.replace(
                 "{user.joined_at}",
-                discord.utils.format_dt(user.joined_at, style="R"),  # type: ignore
+                discord.utils.format_dt(joined_at, style="R") if joined_at else "N/A",
             )
         if "{user.created_at}" in params:
             params = params.replace(
-                "{user.created_at}", discord.utils.format_dt(user.created_at, style="R")
+                "{user.created_at}",
+                discord.utils.format_dt(user.created_at, style="R") if user.created_at else "N/A",
             )
         if "{user.discriminator}" in params:
-            params = params.replace("{user.discriminator}", user.discriminator)
-        if "{guild.name}" in params:
-            params = params.replace("{guild.name}", user.guild.name)
-        if "{guild.count}" in params:
-            params = params.replace("{guild.count}", str(user.guild.member_count))
-        if "{guild.count.format}" in params:
-            params = params.replace(
-                "{guild.count.format}",
-                EmbedBuilder.ordinal(len(user.guild.members)),  # type: ignore
-            )
-        if "{guild.id}" in params:
-            params = params.replace("{guild.id}", user.guild.id)  # type: ignore
-        if "{guild.created_at}" in params:
-            params = params.replace(
-                "{guild.created_at}",
-                discord.utils.format_dt(user.guild.created_at, style="R"),
-            )
-        if "{guild.boost_count}" in params:
-            params = params.replace(
-                "{guild.boost_count}", str(user.guild.premium_subscription_count)
-            )
-        if "{guild.booster_count}" in params:
-            params = params.replace(
-                "{guild.booster_count}", str(len(user.guild.premium_subscribers))
-            )
-        if "{guild.boost_count.format}" in params:
-            params = params.replace(
-                "{guild.boost_count.format}",
-                EmbedBuilder.ordinal(user.guild.premium_subscription_count),  # type: ignore
-            )
-        if "{guild.booster_count.format}" in params:
-            params = params.replace(
-                "{guild.booster_count.format}",
-                EmbedBuilder.ordinal(len(user.guild.premium_subscribers)),  # type: ignore
-            )
-        if "{guild.boost_tier}" in params:
-            params = params.replace("{guild.boost_tier}", str(user.guild.premium_tier))
-        if "{guild.vanity}" in params:
-            params = params.replace(
-                "{guild.vanity}",
-                "/" + user.guild.vanity_url_code or "none",  # type: ignore
-            )
+            params = params.replace("{user.discriminator}", str(getattr(user, "discriminator", "0")))
+
+        if guild:
+            if "{guild.name}" in params:
+                params = params.replace("{guild.name}", guild.name)
+            if "{guild.count}" in params:
+                params = params.replace("{guild.count}", str(guild.member_count or len(guild.members)))
+            if "{guild.count.format}" in params:
+                params = params.replace(
+                    "{guild.count.format}",
+                    EmbedBuilder.ordinal(guild.member_count or len(guild.members)),
+                )
+            if "{guild.id}" in params:
+                params = params.replace("{guild.id}", str(guild.id))
+            if "{guild.created_at}" in params:
+                params = params.replace(
+                    "{guild.created_at}",
+                    discord.utils.format_dt(guild.created_at, style="R") if guild.created_at else "N/A",
+                )
+            if "{guild.boost_count}" in params:
+                params = params.replace(
+                    "{guild.boost_count}", str(guild.premium_subscription_count or 0)
+                )
+            if "{guild.booster_count}" in params:
+                params = params.replace(
+                    "{guild.booster_count}", str(len(getattr(guild, "premium_subscribers", [])))
+                )
+            if "{guild.boost_count.format}" in params:
+                params = params.replace(
+                    "{guild.boost_count.format}",
+                    EmbedBuilder.ordinal(guild.premium_subscription_count or 0),
+                )
+            if "{guild.booster_count.format}" in params:
+                params = params.replace(
+                    "{guild.booster_count.format}",
+                    EmbedBuilder.ordinal(len(getattr(guild, "premium_subscribers", []))),
+                )
+            if "{guild.boost_tier}" in params:
+                params = params.replace("{guild.boost_tier}", str(guild.premium_tier))
+            if "{guild.vanity}" in params:
+                vanity = getattr(guild, "vanity_url_code", None)
+                params = params.replace(
+                    "{guild.vanity}",
+                    f"/{vanity}" if vanity else "none",
+                )
+            if "{guild.icon}" in params:
+                if guild.icon:
+                    params = params.replace("{guild.icon}", guild.icon.url)
+                else:
+                    params = params.replace("{guild.icon}", "https://none.none")
+        else:
+            for tag in [
+                "{guild.name}", "{guild.count}", "{guild.count.format}",
+                "{guild.id}", "{guild.created_at}", "{guild.boost_count}",
+                "{guild.booster_count}", "{guild.boost_count.format}",
+                "{guild.booster_count.format}", "{guild.boost_tier}",
+                "{guild.vanity}", "{guild.icon}"
+            ]:
+                params = params.replace(tag, "N/A")
+
         if "{invisible}" in params:
             params = params.replace("{invisible}", "2B2D31")
         if "{botcolor}" in params:
             params = params.replace("{botcolor}", "7d7ead")
-        if "{guild.icon}" in params:
-            if user.guild.icon:
-                params = params.replace("{guild.icon}", user.guild.icon.url)
-            else:
-                params = params.replace("{guild.icon}", "https://none.none")
 
         return params
 
-    async def to_object(params):  # type: ignore
-        x = {}
+    @staticmethod
+    async def to_object(params: str) -> Tuple[Optional[str], Optional[discord.Embed], discord.ui.View]:
+        x: Dict[str, Any] = {}
         fields = []
         content = None
         view = discord.ui.View()
 
         for part in EmbedBuilder.get_parts(params):
             if part.startswith("content:"):
-                content = part[len("content:") :]
+                c_val = part[len("content:") :].strip()
+                if c_val:
+                    content = c_val
 
-            if part.startswith("title:"):
-                x["title"] = part[len("title:") :]
+            elif part.startswith("title:"):
+                t_val = part[len("title:") :].strip()
+                if t_val:
+                    x["title"] = t_val
 
-            if part.startswith("description:"):
-                x["description"] = part[len("description:") :]
+            elif part.startswith("description:"):
+                d_val = part[len("description:") :]
+                if d_val:
+                    x["description"] = d_val
 
-            if part.startswith("color:"):
+            elif part.startswith("color:"):
+                raw_color = part[len("color:") :].strip().replace("#", "").replace("0x", "")
                 try:
-                    x["color"] = int(part[len("color:") :].replace("#", ""), 16)
-                except:
+                    x["color"] = int(raw_color, 16)
+                except Exception:
                     x["color"] = 0x2F3136
 
-            if part.startswith("image:"):
-                x["image"] = {"url": part[len("image:") :]}
+            elif part.startswith("image:"):
+                img_url = part[len("image:") :].strip()
+                if img_url:
+                    x["image"] = {"url": img_url}
 
-            if part.startswith("thumbnail:"):
-                x["thumbnail"] = {"url": part[len("thumbnail:") :]}
+            elif part.startswith("thumbnail:"):
+                thumb_url = part[len("thumbnail:") :].strip()
+                if thumb_url:
+                    x["thumbnail"] = {"url": thumb_url}
 
-            if part.startswith("author:"):
+            elif part.startswith("author:"):
                 z = part[len("author:") :].split(" && ")
-                try:
-                    name = z[0] if z[0] else None
-                except:
-                    name = None
-                try:
-                    icon_url = z[1] if z[1] else None
-                except:
-                    icon_url = None
-                try:
-                    url = z[2] if z[2] else None
-                except:
-                    url = None
+                name = z[0].strip() if len(z) > 0 and z[0].strip() else None
+                icon_url = z[1].strip() if len(z) > 1 and z[1].strip() else None
+                url = z[2].strip() if len(z) > 2 and z[2].strip() else None
 
-                x["author"] = {"name": name}
-                if icon_url:
-                    x["author"]["icon_url"] = icon_url
-                if url:
-                    x["author"]["url"] = url
+                if name or icon_url or url:
+                    author_dict: Dict[str, Any] = {"name": name or "\u200b"}
+                    if icon_url:
+                        author_dict["icon_url"] = icon_url
+                    if url:
+                        author_dict["url"] = url
+                    x["author"] = author_dict
 
-            if part.startswith("field:"):
+            elif part.startswith("field:"):
                 z = part[len("field:") :].split(" && ")
-                try:
-                    name = z[0] if z[0] else None
-                except:
-                    name = None
-                try:
-                    value = z[1] if z[1] else None
-                except:
-                    value = None
-                try:
-                    inline = z[2] if z[2] else True
-                except:
-                    inline = True
-
-                if isinstance(inline, str):
-                    if inline == "true":
-                        inline = True
-
-                    elif inline == "false":
-                        inline = False
+                name = z[0].strip() if len(z) > 0 and z[0].strip() else "\u200b"
+                value = z[1].strip() if len(z) > 1 and z[1].strip() else "\u200b"
+                inline_raw = z[2].strip().lower() if len(z) > 2 else "true"
+                inline = False if inline_raw in ("false", "no", "0") else True
 
                 fields.append({"name": name, "value": value, "inline": inline})
 
-            if part.startswith("footer:"):
+            elif part.startswith("footer:"):
                 z = part[len("footer:") :].split(" && ")
-                try:
-                    text = z[0] if z[0] else None
-                except:
-                    text = None
-                try:
-                    icon_url = z[1] if z[1] else None
-                except:
-                    icon_url = None
-                x["footer"] = {"text": text}
-                if icon_url:
-                    x["footer"]["icon_url"] = icon_url
+                text = z[0].strip() if len(z) > 0 and z[0].strip() else None
+                icon_url = z[1].strip() if len(z) > 1 and z[1].strip() else None
 
-            if part.startswith("button:"):
+                if text or icon_url:
+                    footer_dict: Dict[str, Any] = {"text": text or "\u200b"}
+                    if icon_url:
+                        footer_dict["icon_url"] = icon_url
+                    x["footer"] = footer_dict
+
+            elif part.startswith("button:"):
                 z = part[len("button:") :].split(" && ")
-                disabled = True
+                disabled = False
                 style = discord.ButtonStyle.gray
                 emoji = None
                 label = None
                 url = None
+
                 for m in z:
-                    if "label:" in m:
-                        label = m.replace("label:", "")
-                    if "url:" in m:
-                        url = m.replace("url:", "").strip()
-                        disabled = False
-                    if "emoji:" in m:
-                        emoji = m.replace("emoji:", "").strip()
-                    if "disabled" in m:
+                    m = m.strip()
+                    if m.startswith("label:"):
+                        label = m[len("label:") :].strip()
+                    elif m.startswith("url:"):
+                        url = m[len("url:") :].strip()
+                    elif m.startswith("emoji:"):
+                        emoji = m[len("emoji:") :].strip()
+                    elif m == "disabled" or m.startswith("disabled:"):
                         disabled = True
-                    if "style:" in m:
-                        if m.replace("style:", "").strip() == "red":
+                    elif m.startswith("style:"):
+                        s = m[len("style:") :].strip().lower()
+                        if s in ("red", "danger"):
                             style = discord.ButtonStyle.red
-                        elif m.replace("style:", "").strip() == "green":
+                        elif s in ("green", "success"):
                             style = discord.ButtonStyle.green
-                        elif m.replace("style:", "").strip() == "gray":
+                        elif s in ("gray", "grey", "secondary"):
                             style = discord.ButtonStyle.gray
-                        elif m.replace("style:", "").strip() == "blue":
+                        elif s in ("blue", "blurple", "primary"):
                             style = discord.ButtonStyle.blurple
+                        elif s in ("link", "url"):
+                            style = discord.ButtonStyle.link
 
-                view.add_item(
-                    discord.ui.Button(
-                        style=style,
-                        label=label,
-                        emoji=emoji,
-                        url=url,
-                        disabled=disabled,
+                if url:
+                    view.add_item(
+                        discord.ui.Button(
+                            style=discord.ButtonStyle.link,
+                            label=label or None,
+                            emoji=emoji or None,
+                            url=url,
+                            disabled=disabled,
+                        )
                     )
-                )
+                else:
+                    view.add_item(
+                        discord.ui.Button(
+                            style=style,
+                            label=label or None,
+                            emoji=emoji or None,
+                            disabled=disabled,
+                        )
+                    )
 
-        if not x:
-            embed = None
-        else:
+        if fields:
             x["fields"] = fields
-            embed = discord.Embed.from_dict(x)
+
+        embed = discord.Embed.from_dict(x) if x else None
         return content, embed, view
 
 
 class EmbedScript(commands.Converter):
     async def convert(self, ctx: commands.Context, argument: str):
-        x = await EmbedBuilder.to_object(
-            EmbedBuilder.embed_replacement(ctx.author, argument)  # type: ignore
-        )
-        if x[0] or x[1]:
-            return {"content": x[0], "embed": x[1], "view": x[2]}
-        return {"content": EmbedBuilder.embed_replacement(ctx.author, argument)}  # type: ignore
+        processed = EmbedBuilder.embed_replacement(ctx.author, argument) or argument
+        content, embed, view = await EmbedBuilder.to_object(processed)
+
+        res = {}
+        if content:
+            res["content"] = content
+        if embed:
+            res["embed"] = embed
+        if view and len(view.children) > 0:
+            res["view"] = view
+
+        if res:
+            return res
+        return {"content": processed}
+
 
 async def send_embed(destination, message, member):
-    processed_message = EmbedBuilder.embed_replacement(member, message)  # type: ignore
+    processed_message = EmbedBuilder.embed_replacement(member, message) or message
     content, embed, view = await EmbedBuilder.to_object(processed_message)
     await destination.send(
-        content=content or processed_message,
+        content=content or (processed_message if not embed else None),
         embed=embed,
-        view=view if content or embed else None,
+        view=view if (view and len(view.children) > 0) else None,
     )

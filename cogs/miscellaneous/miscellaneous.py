@@ -7,6 +7,7 @@ import time
 import aiohttp
 # import shazamio
 # from shazamio import Shazam, Serialize
+import re
 from re import match
 
 from base.managers.types import CogMeta
@@ -216,18 +217,67 @@ class Miscellaneous(CogMeta):
     #             return await ctx.warn(f"An error occurred: **{E}**")
 
     # command above was commented because im bored for shazamio-core to build but i hope its functional when it does build.
-    @example(",screenshot")
+    @example(",createembed {embed}$v{title:Hello}$v{description:World}")
+    @hybrid_group(
+        name="embed",
+        aliases=["embeds"],
+        invoke_without_command=True,
+        description="Create and manage custom embeds.",
+    )
+    @has_permissions(manage_messages=True)
+    async def embed(self, ctx: Context, *, script: EmbedScript = None) -> Message:
+        if script is None:
+            return await ctx.send_help(ctx.command)
+        return await ctx.send(**script)
+
+    @embed.command(
+        name="create",
+        aliases=["add", "send", "build", "script", "embedcreate"],
+        description="Create an embed from a script.",
+    )
+    @has_permissions(manage_messages=True)
+    async def embed_create(self, ctx: Context, *, script: EmbedScript = None) -> Message:
+        if script is None:
+            return await ctx.warn(
+                "Enter an embed script. Visually build one at <https://xrypton.bot/embed.html> or run `,help createembed`."
+            )
+        return await ctx.send(**script)
+
+    @embed.command(
+        name="code",
+        aliases=["get", "copy"],
+        description="Get embed code from a message url.",
+    )
+    @has_permissions(manage_messages=True)
+    async def embed_code(self, ctx: Context, message_link: str):
+        return await self.embedcode(ctx, message_link=message_link)
+
+    @embed.command(
+        name="builder",
+        aliases=["web", "link"],
+        description="Get the link to the visual embed builder.",
+    )
+    async def embed_builder_link(self, ctx: Context):
+        return await ctx.embed(
+            title="Xrypton Embed Builder",
+            description="Visually build embeds and generate embed scripts for `,createembed`.\n\n🔗 **[Open Embed Builder](https://xrypton.bot/embed.html)**",
+        )
+
+    @example(",createembed {embed}$v{title:Hello}$v{description:World}")
     @command(
-        aliases=["ce", "script"],
+        name="createembed",
+        aliases=["ce", "script", "embedcreate"],
         description="Create an embed.",
     )
     @has_permissions(manage_messages=True)
     async def createembed(self, ctx: Context, *, script: EmbedScript = None) -> Message:  # type: ignore
         if script is None:
-            return await ctx.warn(f"Enter embed script.")
+            return await ctx.warn(
+                "Enter an embed script. Visually build one at <https://xrypton.bot/embed.html> or run `,help createembed`."
+            )
         return await ctx.send(**script)  # type: ignore
 
-    @example(",embedcode https://discord.com/channels/...")
+    @example(",embedcode https://discord.com/channels/123/456/789")
     @command(
         name="embedcode",
         aliases=["ec"],
@@ -235,10 +285,19 @@ class Miscellaneous(CogMeta):
     )
     async def embedcode(self, ctx: Context, message_link: str):
         try:
-            link_parts = message_link.split("/")
-            guild_id = int(link_parts[-3])
-            channel_id = int(link_parts[-2])
-            message_id = int(link_parts[-1])
+            if message_link.strip().lower().startswith(("{embed}", "$v", "{content:", "{title:", "{description:")):
+                return await ctx.warn(
+                    "It looks like you entered an embed script! Use **,ce** or **,createembed** to send it.\n"
+                    "**,ec** is short for **embedcode** (used to copy an embed from a message link)."
+                )
+
+            match_res = re.search(r"channels/(\d+)/(\d+)/(\d+)", message_link)
+            if not match_res:
+                return await ctx.warn(
+                    "Invalid message link. Format: `https://discord.com/channels/<guild_id>/<channel_id>/<message_id>`"
+                )
+
+            guild_id, channel_id, message_id = map(int, match_res.groups())
 
             guild = ctx.bot.get_guild(guild_id)
             if not guild:
@@ -261,56 +320,62 @@ class Miscellaneous(CogMeta):
                 )
 
             embed = message.embeds[0]
-            embed_dict = embed.to_dict()
+            parts = ["{embed}"]
 
-            parts = []
-            parts.append("{embed}")
+            if message.content:
+                parts.append(f"$v{{content:{message.content}}}")
 
             if embed.title:
-                parts.append("$v{title:" + embed.title + "}")
+                parts.append(f"$v{{title:{embed.title}}}")
 
             if embed.description:
-                parts.append("$v{description:" + embed.description + "}")
+                parts.append(f"$v{{description:{embed.description}}}")
 
             if embed.color:
-                parts.append("$v{color:" + hex(embed.color.value)[2:] + "}")
+                parts.append(f"$v{{color:{hex(embed.color.value)[2:]}}}")
 
-            if embed.author:
+            if embed.author and embed.author.name:
                 author_parts = [
                     embed.author.name or "",
                     embed.author.icon_url or "",
                     embed.author.url or "",
                 ]
-                parts.append("$v{author:" + " && ".join(author_parts) + "}")
+                parts.append(f"$v{{author:{' && '.join(author_parts)}}}")
 
             for field in embed.fields:
                 parts.append(
-                    f"$v{{field:{field.name} && {field.value} && {field.inline}}}"
+                    f"$v{{field:{field.name} && {field.value} && {str(field.inline).lower()}}}"
                 )
 
-            if embed.footer:
+            if embed.footer and embed.footer.text:
                 footer_parts = [embed.footer.text or "", embed.footer.icon_url or ""]
-                parts.append("$v{footer:" + " && ".join(footer_parts) + "}")
+                parts.append(f"$v{{footer:{' && '.join(footer_parts)}}}")
 
-            if embed.image:
-                parts.append("$v{image:" + embed.image.url + "}")  # type: ignore
+            if embed.image and embed.image.url:
+                parts.append(f"$v{{image:{embed.image.url}}}")
 
-            if embed.thumbnail:
-                parts.append("$v{thumbnail:" + embed.thumbnail.url + "}")  # type: ignore
+            if embed.thumbnail and embed.thumbnail.url:
+                parts.append(f"$v{{thumbnail:{embed.thumbnail.url}}}")
 
             if message.components:
                 for row in message.components:
                     for button in row.children:
-                        label = button.label
-                        emoji = button.emoji if button.emoji else "None"
-                        url = button.url if hasattr(button, "url") else "None"
-                        style = button.style.name if button.style else "None"
+                        if isinstance(button, discord.Button):
+                            btn_parts = []
+                            if button.label:
+                                btn_parts.append(f"label:{button.label}")
+                            if button.emoji:
+                                btn_parts.append(f"emoji:{button.emoji}")
+                            if getattr(button, "url", None):
+                                btn_parts.append(f"url:{button.url}")
+                            if button.style and button.style != discord.ButtonStyle.link:
+                                btn_parts.append(f"style:{button.style.name.lower()}")
+                            if button.disabled:
+                                btn_parts.append("disabled")
+                            if btn_parts:
+                                parts.append(f"$v{{button:{' && '.join(btn_parts)}}}")
 
-                        parts.append(
-                            f"$v{{button: label: {label} && emoji: {emoji} && url: {url} && style: {style}}}"
-                        )
-
-            embed_script = "".join(parts)
+            embed_script = "\n".join(parts)
             await ctx.embed(
                 description=f"{EMOJIS.APPROVE} {ctx.author.mention}: **Copied embed script: **```\n{embed_script}\n```",
                 buttons=[{"label": "Code", "emoji": "🔗"}],
@@ -318,14 +383,6 @@ class Miscellaneous(CogMeta):
 
         except Exception as e:
             await ctx.warn(f"An error occurred: {str(e)}")
-
-    async def convert(self, ctx: commands.Context, argument: str):
-        x = await EmbedBuilder.to_object(
-            EmbedBuilder.embed_replacement(ctx.author, argument)  # type: ignore
-        )
-        if x[0] or x[1]:
-            return {"content": x[0], "embed": x[1], "view": x[2]}
-        return {"content": EmbedBuilder.embed_replacement(ctx.author, argument)}  # type: ignore
 
     @example(",pin")
     @command(name="pin", description="Pin a message.")
